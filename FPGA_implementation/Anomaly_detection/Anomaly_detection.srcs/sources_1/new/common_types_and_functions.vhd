@@ -32,16 +32,18 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 package Common_types_and_functions is 
-    generic map ( N_pixels =>    2578;
-                  p_bands  =>    100;
-                  k       =>    0);
+    constant N_PIXELS : integer;
+    constant P_BANDS :  integer;
+    constant K :        integer
     constant pixel_data_size is std_logic_vector(11 downto 0);
-    type pixel_vector is array (0 to p_bands-1) of std_logic_vector(pixel_data_size downto 0);          
+    type pixel_vector is array (0 to 100 -1) of std_logic_vector(pixel_data_size downto 0);          
     type matrix is array (  natural range <> , natural range <>) of pixel_data_size; 
     
 end Common_types_and_functions;
 
---package body Common_types_and_functions is 
-    -- subprogram bodies here
+package body Common_types_and_functions is 
+    constant N_PIXELS : integer := 2578;
+    --constant P_BANDS :  integer := 100;
+    constant K      :   integer := 0;    
     
---end Common_types_and_functions;
+end Common_types_and_functions;

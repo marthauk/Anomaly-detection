@@ -33,13 +33,12 @@ use work.Common_types_and_functions.all
 --use UNISIM.VComponents.all;
 
 entity Transpose is
- 
     Port ( 
            -- pixel_n is index of pixel_looked at
            pixel_n :        in integer;
            clk :            in std_logic ;
            M :              in  matrix (0 to p_bands-1, 0 to N_pixels-1);
-           M_transpose :    out matrix (1, 0 to p_bands -1);
+           M_transpose :    out matrix (1, 0 to p_bands -1)
            );
 end Transpose;
 
@@ -51,7 +50,7 @@ signal M_matrix <= M(0 to p_bands-1, 0 to N_pixels-1);
 begin
 
     p_transpose : process
-        for i in 0 to p_bands-1 loop;
+        for i in 0 to P_BANDS-1 loop;
             M_transpose(1,i) <= M_matrix(i,pixel_n);                  
         end loop;
     end process p_transpose;

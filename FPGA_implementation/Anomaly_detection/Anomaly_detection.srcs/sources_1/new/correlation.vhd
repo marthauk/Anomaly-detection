@@ -20,9 +20,10 @@
 
 
 library IEEE;
+library work;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.Common_types_and_functions.all
-
+use work.Transpose.all
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;
@@ -33,17 +34,12 @@ use work.Common_types_and_functions.all
 --use UNISIM.VComponents.all;
 
 entity Correlation is
-    -- Generics are used for this correlation matrix module in order for the module to be usable in the future for new types of Hyperspectral imagers
-    -- Assingning default values to the variables. k is the size of the kernel, if LRX is to be implemented. Default is  ACAD
-    generic ( N_pixels : positive :=    2578;
-              p_bands  : positive :=    100;
-              k        : positive :=    0);
-            
     Port ( M : in matrix (0 to p_bands-1, 0 to N_pixels-1);
            -- pixel_n is the index of the pixel to correlate
            clk : in std_logic; 
            pixel_n : in integer;
-           out_corr_M : out matrix (0 to p_bands-1, 0 to p_bands -1));
+           out_corr_M : out matrix (0 to p_bands-1, 0 to p_bands -1)
+           );
 end Correlation;
 
 architecture Behavioral of Correlation is
@@ -61,8 +57,8 @@ begin
                   clk => clk);
 
     p_correlate: process(clk)
-        for i in 0 to p_bands-1 loop;
-            for j in 0 to p_bands-1 loop;
+        for i in 0 to P_BANDS-1 loop;
+            for j in 0 to P_BANDS-1 loop;
                 out_corr_M(i,j) <= M_matrix(i,pixel_n) * M_transposed_matrix(1,j);
             end loop;
         end loop;    
