@@ -20,9 +20,10 @@
 
 
 library IEEE;
-USE IEEE.STD_LOGIC_ARITH.ALL;
+USE ieee.NUMERIC_STD.all;
+--USE IEEE.STD_LOGIC_ARITH.ALL;
 USE IEEE.std_logic_UNSIGNED.all;
-USE ieee.numeric_std.all;
+
 use IEEE.STD_LOGIC_1164.ALL;
 
 library work;
@@ -47,13 +48,15 @@ end Transpose;
 
 architecture Behavioral of Transpose is
 
-signal M_matrix <= M(0 to P_BANDS-1, 0 to N_PIXELS-1);
+--signal M_matrix <= M(0 to P_BANDS-1, 0 to N_PIXELS-1);
 --pixel_data <= M_matrix(:,pixel_n);
 begin
+ 
 
     p_transpose : process(clk)
-        for (i in 0 to P_BANDS-1) loop
-            M_transpose(1,i) <= M_matrix(i,to_integer(signed(pixel_index)));                  
+        begin
+        for i in 0 to P_BANDS-1 loop
+            M_transpose(1,i) <= M(i,to_integer(unsigned(pixel_index)));                  
         end loop;
     end process p_transpose;
 

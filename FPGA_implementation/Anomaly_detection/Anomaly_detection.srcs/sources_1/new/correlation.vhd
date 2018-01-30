@@ -20,7 +20,7 @@
 
 
 library IEEE;
-USE IEEE.STD_LOGIC_ARITH.ALL;
+--USE IEEE.STD_LOGIC_ARITH.ALL;
 USE IEEE.std_logic_UNSIGNED.all;
 USE ieee.numeric_std.all;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -50,7 +50,6 @@ architecture Behavioral of Correlation is
 signal M_transposed_matrix : matrix(0 to 0, 0 to P_BANDS-1);
 begin
 
--- in Matlab : corr_M = M(:, pixel_n)* M(:, pixel_n).';
     u1_transpose: entity work.Transpose
         port map( M => M,
                   M_transpose => M_transposed_matrix,
@@ -59,9 +58,10 @@ begin
                   );
 
     p_correlate: process(clk)
+        begin
         for i in 0 to P_BANDS-1 loop
             for j in 0 to P_BANDS-1 loop
-                out_corr_M(i,j) <= M_matrix(i,pixel_n) * M_transposed_matrix(1,j);
+                out_corr_M(i,j) <= M(i,to_integer(unsigned(pixel_index))) * M_transposed_matrix(1,j);
             end loop;
        end loop;    
     end process p_correlate;
