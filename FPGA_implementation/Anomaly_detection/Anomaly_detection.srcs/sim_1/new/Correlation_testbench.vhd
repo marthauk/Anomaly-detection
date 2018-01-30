@@ -21,6 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.numeric_std.all;
 
 library work;
 use work.Common_types_and_functions.all;
@@ -66,7 +67,28 @@ begin
            pixel_index=> pixel_index,
            out_corr_M => out_corr_M
            );
-           
 
+    -- clock process definition( clock with 50% duty cycle defined here)
+    clk_process: process
+    begin 
+        clk <='0';
+        wait for CLK_PERIOD/2;
+        clk <= '1';
+        wait for CLK_PERIOD/2;
+    end process clk_process;           
+
+    -- stimulus process
+    stim_proc: process
+    begin
+        wait for CLK_PERIOD * 2;
+        pixel_index <= std_logic_vector(to_unsigned(3,log2(N_PIXELS)));
+        wait for CLK_PERIOD *2;
+        for i in 0 to P_BANDS-1 loop
+           for j in 0 to N_PIXELS-1 loop
+           M(i,j) <= std_logic_vector(to_unsigned(j,16));
+           end loop;
+        end loop;
+      
+    end process stim_proc;
 
 end Behavioral;

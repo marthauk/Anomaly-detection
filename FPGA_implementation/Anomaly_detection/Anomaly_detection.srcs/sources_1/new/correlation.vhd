@@ -20,10 +20,8 @@
 
 
 library IEEE;
---USE IEEE.STD_LOGIC_ARITH.ALL;
-USE IEEE.std_logic_UNSIGNED.all;
-USE ieee.numeric_std.all;
 use IEEE.STD_LOGIC_1164.ALL;
+USE ieee.numeric_std.all;
 
 library work;
 use work.Common_types_and_functions.all;
@@ -38,7 +36,8 @@ use work.Common_types_and_functions.all;
 
 entity Correlation is
     Port ( M : in matrix (0 to P_BANDS-1, 0 to N_PIXELS-1);
-           clk : in std_logic; 
+           clk : in std_logic;
+            
            pixel_index :        in std_logic_vector(log2(N_PIXELS)-1 downto 0);
            out_corr_M : out matrix (0 to P_BANDS-1, 0 to P_BANDS-1)
            );
@@ -46,8 +45,8 @@ end Correlation;
 
 architecture Behavioral of Correlation is
 
---signal M_matrix : matrix(0 to P_BANDS-1, 0 to N_PIXELS-1);
 signal M_transposed_matrix : matrix(0 to 0, 0 to P_BANDS-1);
+signal mult : std_logic_vector(17 downto 0);
 begin
 
     u1_transpose: entity work.Transpose
@@ -61,7 +60,9 @@ begin
         begin
         for i in 0 to P_BANDS-1 loop
             for j in 0 to P_BANDS-1 loop
-                out_corr_M(i,j) <= M(i,to_integer(unsigned(pixel_index))) * M_transposed_matrix(1,j);
+                --mult <= std_logic_vector(to_signed(to_integer(signed(M(i,to_integer(unsigned(pixel_index)))))* to_integer((signed(M_transposed_matrix(0,j)))),16));
+                out_corr_M(i,j)<= std_logic_vector(to_signed(to_integer(signed(M(i,to_integer(unsigned(pixel_index)))))* to_integer((signed(M_transposed_matrix(0,j)))),16));
+                --out_corr_M(i,j) <= signed(M(i,to_integer(unsigned(pixel_index)))))* (signed(M_transposed_matrix(1,j)));
             end loop;
        end loop;    
     end process p_correlate;

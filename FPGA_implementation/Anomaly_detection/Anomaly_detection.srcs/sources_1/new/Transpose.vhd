@@ -22,7 +22,6 @@
 library IEEE;
 USE ieee.NUMERIC_STD.all;
 --USE IEEE.STD_LOGIC_ARITH.ALL;
-USE IEEE.std_logic_UNSIGNED.all;
 
 use IEEE.STD_LOGIC_1164.ALL;
 
