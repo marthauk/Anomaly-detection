@@ -47,23 +47,31 @@ package Common_types_and_functions is
     --          P_BANDS : integer := 100);          
     type matrix is array (  natural range <> , natural range <>) of std_logic_vector(15 downto 0);--assuming pixel_data_size is 16 bit; 
     function log2(i : natural) return integer;
+    function sel (n : natural) return integer;
+    
 end Common_types_and_functions;
 
 package body Common_types_and_functions is 
+
     constant N_PIXELS : integer := 2578;
     constant P_BANDS :  integer := 100;
     constant K      :   integer := 0;
+          
        
     function log2( i : natural) return integer is
         variable temp    : integer := i;
         variable ret_val : integer := 0; 
       begin                    
-        while temp > 1 loop
+        while (temp > 1) loop
           ret_val := ret_val + 1;
           temp    := temp / 2;     
         end loop;
           
         return ret_val;
       end function; 
-    
+      
+    function sel( n : natural ) return integer is       
+        begin
+        return n;
+    end function;
 end Common_types_and_functions;
