@@ -55,7 +55,7 @@ begin
     p_transpose : process(clk)
         begin
         for i in 0 to P_BANDS-1 loop
-            M_transpose(1,i) <= M(i,to_integer(unsigned(pixel_index)));                  
+            M_transpose(0,i) <= M(i,to_integer(unsigned(pixel_index)));                  
         end loop;
     end process p_transpose;
 

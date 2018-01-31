@@ -44,7 +44,8 @@ package Common_types_and_functions is
     --type pixel_vector is array (0 to 100 -1) of std_logic_vector(pixel_data_size downto 0);
     --generic ( N_PIXELS: integer := 2578;
     --          P_BANDS : integer := 100);          
-    type matrix is array (  natural range <> , natural range <>) of std_logic_vector(15 downto 0);--assuming pixel_data_size is 16 bit; 
+    type matrix is array (  natural range <> , natural range <>) of std_logic_vector(15 downto 0);--assuming pixel_data_size is 16 bit;
+    type matrix_32 is array (  natural range <> , natural range <>) of std_logic_vector(31 downto 0); -- for correlation results
     function log2(i : natural) return integer;
     function sel (n : natural) return integer;
     
