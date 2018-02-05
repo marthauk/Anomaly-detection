@@ -38,6 +38,7 @@ use work.Common_types_and_functions.all;
 entity Correlation is
     Port ( M : in matrix (0 to P_BANDS-1, 0 to N_PIXELS-1);
            clk : in std_logic;
+           clk_en : in std_logic;
            pixel_index :        in std_logic_vector(log2(N_PIXELS)-1 downto 0);
            out_corr_M : out matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1)
            );
@@ -47,8 +48,11 @@ architecture Behavioral of Correlation is
 
 signal M_transposed_matrix : matrix(0 to 0, 0 to P_BANDS-1);
 signal A_factor            : std_logic_vector(15 downto 0);
+signal A_factor_prev       : std_logic_vector(15 downto 0);
 signal B_factor            : std_logic_vector(15 downto 0);
 signal P_output            : std_logic_vector(31 downto 0);
+signal out_corr_M_prev     : matrix_32(0 to P_BANDS-1, 0 to P_BANDS-1);
+signal out_corr_temp       : std_logic_vector(31 downto 0) := (others=>'0');
 
 COMPONENT mult_gen_0
   PORT (
@@ -66,32 +70,46 @@ begin
         port map( M => M,
                   M_transpose => M_transposed_matrix,
                   pixel_index => pixel_index,
-                  clk => clk
+                  clk => clk,
+                  clk_en => clk_en
                   );
 
     p_correlate: process(clk)
         begin
-        for i in 0 to P_BANDS-1 loop
-            for j in 0 to P_BANDS-1 loop
+        if clk_en = '1' and rising_edge(clk) then
+            for i in 0 to P_BANDS-1 loop
+                for j in 0 to P_BANDS-1 loop
                 --mult <= std_logic_vector(to_signed(to_integer(signed(M(i,to_integer(unsigned(pixel_index)))))* to_integer((signed(M_transposed_matrix(0,j)))),16));
                 -- elements of out_corr need maybe to be of size 31:0, due to the product A[15:0]*B[15:0] may be 32 bit. 
                 --out_corr_M(i,j)<= std_logic_vector(to_signed(to_integer(signed(M(i,to_integer(unsigned(pixel_index)))))* to_integer((signed(M_transposed_matrix(0,j)))),16));
-                A_factor <= M(i,to_integer(unsigned(pixel_index)));
-                B_factor <= M_transposed_matrix(0,j);
+                    A_factor <= M(i,to_integer(unsigned(pixel_index)));
+                    B_factor <= M_transposed_matrix(0,i);
                 -- maybe indexes need to be i-1 and j-1. 
-                out_corr_M(i,j) <= P_output;
+                    --out_corr_M(i,j) <= P_output;
+                    --out_corr_M_prev(i,j) <= std_logic_vector(unsigned(P_output) + unsigned(out_corr_M_prev(i,j)));
+                    --out_corr_M(i,j) <= std_logic_vector(unsigned(P_output) + unsigned(out_corr_M_prev(i,j)));
+                    out_corr_temp <= std_logic_vector(unsigned(P_output));-- +unsigned(out_corr_temp)); --unsigned(out_corr_M_prev(i,j)));
                 --out_corr_M(i,j) <= 
                 --out_corr_M(i,j) <= signed(M(i,to_integer(unsigned(pixel_index)))))* (signed(M_transposed_matrix(1,j)));
+                end loop;
             end loop;
-       end loop;    
+        end if;    
     end process p_correlate;
+    
+    --out_corr_M <= out_corr_M_prev;
+    process(clk)
+    begin
+        if clk_en ='1' and rising_edge(clk) then
+            A_factor_prev <= A_factor;
+            end if;
+    end process;
     
 multiplier : mult_gen_0
       PORT MAP (
         CLK => clk,
-        A => A_factor,
+        A => A_factor_prev,
         B => B_factor,
-        CE => CE,
+        CE => clk_en,
         P => P_output
       );
         

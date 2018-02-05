@@ -39,9 +39,10 @@ use work.Common_types_and_functions.all;
 entity Transpose is
 -- pixel_n is index of pixel_looked at
     Port (   pixel_index :        in std_logic_vector(log2(sel(N_PIXELS))-1 downto 0);
-           clk :            in std_logic ;
-           M :              in  matrix (0 to sel(P_BANDS-1), 0 to sel(N_PIXELS-1));
-           M_transpose :    out matrix (0 to 0, 0 to sel(P_BANDS)-1)
+           clk :                  in std_logic;
+           clk_en:                in std_logic;
+           M :                    in  matrix (0 to sel(P_BANDS-1), 0 to sel(N_PIXELS-1));
+           M_transpose :          out matrix (0 to 0, 0 to sel(P_BANDS)-1)
            );
 end Transpose;
 
@@ -54,9 +55,11 @@ begin
 
     p_transpose : process(clk)
         begin
-        for i in 0 to P_BANDS-1 loop
-            M_transpose(0,i) <= M(i,to_integer(unsigned(pixel_index)));                  
-        end loop;
+        if clk_en = '1' and rising_edge(clk) then
+            for i in 0 to P_BANDS-1 loop
+                M_transpose(0,i) <= M(i,to_integer(unsigned(pixel_index)));                  
+            end loop;
+        end if;
     end process p_transpose;
 
 

@@ -43,18 +43,24 @@ package Common_types_and_functions is
     --constant pixel_data_size is std_logic_vector(11 downto 0);
     --type pixel_vector is array (0 to 100 -1) of std_logic_vector(pixel_data_size downto 0);
     --generic ( N_PIXELS: integer := 2578;
-    --          P_BANDS : integer := 100);          
-    type matrix is array (  natural range <> , natural range <>) of std_logic_vector(15 downto 0);--assuming pixel_data_size is 16 bit;
-    type matrix_32 is array (  natural range <> , natural range <>) of std_logic_vector(31 downto 0); -- for correlation results
+    --          P_BANDS : integer := 100);
+    
+    --assuming pixel_data_size is 16 bit;          
+    type matrix is array (  natural range <> , natural range <>) of std_logic_vector(15 downto 0);
+     -- for correlation results
+    type matrix_32 is array (  natural range <> , natural range <>) of std_logic_vector(31 downto 0);
     function log2(i : natural) return integer;
     function sel (n : natural) return integer;
     
 end Common_types_and_functions;
 
 package body Common_types_and_functions is 
-
-    constant N_PIXELS : integer := 2578;
-    constant P_BANDS :  integer := 100;
+    -- Found in SmallSat project description:
+    --constant N_PIXELS : integer := 2578;
+    --constant P_BANDS :  integer := 100;
+    constant N_PIXELS : integer := 3;
+    constant P_BANDS :  integer := 2;
+        
     constant K      :   integer := 0;
           
        
