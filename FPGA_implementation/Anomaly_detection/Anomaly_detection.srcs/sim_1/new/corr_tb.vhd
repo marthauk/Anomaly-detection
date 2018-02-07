@@ -98,13 +98,10 @@ begin
         reset<='0';        
         wait for CLK_PERIOD *2;
         --for i in 0 to P_BANDS-1 loop
-        --  for j in 0 to N_PIXELS-1 loop
-        --for i in 0 to 4 loop
-            --for j in 0 to 3 loop   
-        --   M(i,j) <= std_logic_vector(to_unsigned(j,16));
-        --M:=(std_logic_vector(to_unsigned(1,16)),std_logic_vector(to_unsigned(3,16)), std_logic_vector(to_unsigned(1,16))), (std_logic_vector(to_unsigned(2,16)),std_logic_vector(to_unsigned(3,16)),std_logic_vector(to_unsigned(2,16)));
+          --for j in 0 to N_PIXELS-1 loop   
+          -- M(i,j) <= std_logic_vector(to_unsigned(j,16));
         M(0,0)<=std_logic_vector(to_unsigned(1,16));
-        M(0,1)<=std_logic_vector(to_unsigned(2,16));
+        M(0,1)<=std_logic_vector(to_unsigned(3,16));
         M(0,2)<=std_logic_vector(to_unsigned(1,16));
         M(1,0)<=std_logic_vector(to_unsigned(2,16));
         M(1,1)<=std_logic_vector(to_unsigned(3,16));
@@ -112,9 +109,9 @@ begin
 
            ready <= '1';
            --pixel_index <= pixel_index + std_logic_vector(to_unsigned(1,log2(N_PIXELS)));
-        --   end loop;
-        --end loop;
-        wait for CLK_PERIOD *20;
+   --      end loop;
+     --   end loop;
+        wait for CLK_PERIOD *300;
     end process stim_proc;
     
    process(clk)

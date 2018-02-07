@@ -50,11 +50,6 @@ architecture Behavioral of Correlation is
 
 signal M_transposed_matrix : matrix(0 to 0, 0 to P_BANDS-1);
 signal M_pixel           : matrix (0 to P_BANDS-1, 0 to 0);
-signal M_pixel_prev       :matrix (0 to P_BANDS-1,0 to 0) ;
-signal B_factor            : std_logic_vector(15 downto 0);
-signal P_output            : std_logic_vector(31 downto 0);
-signal out_corr_M_prev     : matrix_32(0 to P_BANDS-1, 0 to P_BANDS-1):= ((others=>(others=>(others=>'0'))));
-
 
 begin
 
@@ -67,12 +62,12 @@ begin
                   );
 
     p_correlate: process(clk,reset)
-    variable count_two_cycles : integer:=0;
+    variable count_signal_finish : integer:=0;
         begin
         if reset ='1' then
             out_corr_M <=(others=>(others=>(others=>'0')));
             corr_finished <='0';
-            count_two_cycles := 0;
+            count_signal_finish := 0;
         elsif clk_en = '1' and rising_edge(clk) and corr_finished ='0' then
             for i in 0 to P_BANDS-1 loop
                 for j in 0 to P_BANDS-1 loop
@@ -80,19 +75,13 @@ begin
                     out_corr_M(i,j) <= std_logic_vector(to_signed(to_integer(signed(out_corr_M(i,j))) + to_integer(signed(M_pixel(i,0)))* to_integer(signed(M_transposed_matrix(0,j))),32));                
                 end loop;
             end loop;
-            if (to_integer(unsigned(pixel_index))= N_PIXELS-1) and count_two_cycles>=1 then
+            if (to_integer(unsigned(pixel_index))>= N_PIXELS-1) and count_signal_finish>=1 then
                 corr_finished <= '1';
             elsif (to_integer(unsigned(pixel_index))>= N_PIXELS-1) then 
-                count_two_cycles := count_two_cycles +1;
+                count_signal_finish := count_signal_finish +1;
             end if;
         end if;    
     end process p_correlate;
-  
-    process(clk)
-    begin
-        if clk_en ='1' and rising_edge(clk) then
-            M_pixel_prev <= M_pixel;
-            end if;
-    end process;        
+ 
 
 end Behavioral;
