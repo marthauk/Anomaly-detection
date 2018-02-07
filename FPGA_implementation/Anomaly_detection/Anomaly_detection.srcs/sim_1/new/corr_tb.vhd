@@ -45,11 +45,13 @@ architecture Behavioral of corr_tb is
 
 -- device under test
 component Correlation is 
-port( M :           in matrix (0 to P_BANDS-1, 0 to N_PIXELS-1);
-      clk :         in std_logic;
-      pixel_index : in std_logic_vector(log2(N_PIXELS)-1 downto 0);
-      out_corr_M :  out matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
-      clk_en :      in std_logic
+port( M :               in matrix (0 to P_BANDS-1, 0 to N_PIXELS-1);
+      clk :             in std_logic;
+      reset :           in std_logic;
+      pixel_index :     in std_logic_vector(log2(N_PIXELS) downto 0);
+      out_corr_M :      inout matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
+      clk_en :          in std_logic;
+      corr_finished:    inout std_logic
       );
  end component;
 -- inputs 
@@ -57,20 +59,25 @@ port( M :           in matrix (0 to P_BANDS-1, 0 to N_PIXELS-1);
  signal M:              matrix(0 to P_BANDS-1, 0 to N_PIXELS-1);
  signal clk :           std_logic := '0';
  signal clk_en :           std_logic := '1';
- signal pixel_index :   std_logic_vector(log2(N_PIXELS)-1 downto 0) ;
- 
+ signal pixel_index :   std_logic_vector(log2(N_PIXELS) downto 0):= (others=>'0') ;
+ signal ready   :       std_logic:='0';
+ signal reset :         std_logic:='0';
  --outputs
 signal out_corr_M :    matrix_32(0 to P_BANDS-1, 0 to P_BANDS-1);
+signal corr_finished_s : std_logic ;--:='0';
+
 
 constant CLK_PERIOD : time := 10 ns;
 begin
 
     dut : Correlation port map(
            clk => clk,
+           reset=> reset,
            clk_en => clk_en,
            M => M,
            pixel_index=> pixel_index,
-           out_corr_M => out_corr_M
+           out_corr_M => out_corr_M,
+           corr_finished=> corr_finished_s
            );
 
     -- clock process definition( clock with 50% duty cycle defined here)
@@ -86,20 +93,36 @@ begin
     stim_proc: process
     begin
         clk_en <= '1';
+        reset <='1';
         wait for CLK_PERIOD * 2;
-        pixel_index <= std_logic_vector(to_unsigned(0,log2(N_PIXELS)));
+        reset<='0';        
         wait for CLK_PERIOD *2;
-        for i in 0 to P_BANDS-1 loop
-          for j in 0 to N_PIXELS-1 loop
+        --for i in 0 to P_BANDS-1 loop
+        --  for j in 0 to N_PIXELS-1 loop
         --for i in 0 to 4 loop
             --for j in 0 to 3 loop   
-           M(i,j) <= std_logic_vector(to_unsigned(j,16));
-           --pixel_index <= pixel_index + std_logic_vector(to_unsigned(1,log2(N_PIXELS)));
-           pixel_index <= std_logic_vector(to_unsigned(j,log2(N_PIXELS)));
-           wait for CLK_PERIOD;
-           end loop;
-           pixel_index <= std_logic_vector(to_unsigned(0,log2(N_PIXELS)));
-        end loop;
-    end process stim_proc;
+        --   M(i,j) <= std_logic_vector(to_unsigned(j,16));
+        --M:=(std_logic_vector(to_unsigned(1,16)),std_logic_vector(to_unsigned(3,16)), std_logic_vector(to_unsigned(1,16))), (std_logic_vector(to_unsigned(2,16)),std_logic_vector(to_unsigned(3,16)),std_logic_vector(to_unsigned(2,16)));
+        M(0,0)<=std_logic_vector(to_unsigned(1,16));
+        M(0,1)<=std_logic_vector(to_unsigned(2,16));
+        M(0,2)<=std_logic_vector(to_unsigned(1,16));
+        M(1,0)<=std_logic_vector(to_unsigned(2,16));
+        M(1,1)<=std_logic_vector(to_unsigned(3,16));
+        M(1,2)<=std_logic_vector(to_unsigned(2,16));
 
+           ready <= '1';
+           --pixel_index <= pixel_index + std_logic_vector(to_unsigned(1,log2(N_PIXELS)));
+        --   end loop;
+        --end loop;
+        wait for CLK_PERIOD *20;
+    end process stim_proc;
+    
+   process(clk)
+    begin
+        if rising_edge(clk) and ready ='1'  then
+            if (to_integer(unsigned(pixel_index)) < N_PIXELS-1) then
+                pixel_index <=pixel_index + 1;
+            end if;
+        end if;
+    end process;
 end Behavioral;

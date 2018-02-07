@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="corr_tb_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="common_types_and_functions" />
+            <top_module name="corr_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="43366667fs"></ZoomStartTime>
+      <ZoomEndTime time="173166668fs"></ZoomEndTime>
+      <Cursor1Time time="88167000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="175"></NameColumnWidth>
+      <ValueColumnWidth column_width="249"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="10" />
+   <wvobject fp_name="/corr_tb/M" type="array">
+      <obj_property name="ElementShortName">M[0:1,0:2][15:0]</obj_property>
+      <obj_property name="ObjectShortName">M[0:1,0:2][15:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/clk_en" type="logic">
+      <obj_property name="ElementShortName">clk_en</obj_property>
+      <obj_property name="ObjectShortName">clk_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/pixel_index" type="array">
+      <obj_property name="ElementShortName">pixel_index[1:0]</obj_property>
+      <obj_property name="ObjectShortName">pixel_index[1:0]</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/ready" type="logic">
+      <obj_property name="ElementShortName">ready</obj_property>
+      <obj_property name="ObjectShortName">ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/out_corr_M" type="array">
+      <obj_property name="ElementShortName">out_corr_M[0:1,0:1][31:0]</obj_property>
+      <obj_property name="ObjectShortName">out_corr_M[0:1,0:1][31:0]</obj_property>
+      <obj_property name="Radix">SIGNEDDECRADIX</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/CLK_PERIOD" type="other">
+      <obj_property name="ElementShortName">CLK_PERIOD</obj_property>
+      <obj_property name="ObjectShortName">CLK_PERIOD</obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/dut/u1_transpose/M_transpose" type="array">
+      <obj_property name="ElementShortName">M_transpose[0:0,0:1][15:0]</obj_property>
+      <obj_property name="ObjectShortName">M_transpose[0:0,0:1][15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/dut/A_factor" type="array">
+      <obj_property name="ElementShortName">A_factor[15:0]</obj_property>
+      <obj_property name="ObjectShortName">A_factor[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/corr_tb/dut/B_factor" type="array">
+      <obj_property name="ElementShortName">B_factor[15:0]</obj_property>
+      <obj_property name="ObjectShortName">B_factor[15:0]</obj_property>
+   </wvobject>
+</wave_config>
