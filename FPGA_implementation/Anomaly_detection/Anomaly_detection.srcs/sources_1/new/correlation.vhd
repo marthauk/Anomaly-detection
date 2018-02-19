@@ -52,7 +52,7 @@ signal M_transposed_matrix : matrix(0 to 0, 0 to P_BANDS-1);
 signal M_pixel           : matrix (0 to P_BANDS-1, 0 to 0);
 
 begin
-
+-- transpose calculates the transpose of a matrix
     u1_transpose: entity work.Transpose
         port map( M => M,
                   M_transpose => M_transposed_matrix,
@@ -60,7 +60,7 @@ begin
                   clk => clk,
                   clk_en => clk_en
                   );
-
+-- This is where the correlation actually happens
     p_correlate: process(clk,reset)
     variable count_signal_finish : integer:=0;
         begin
