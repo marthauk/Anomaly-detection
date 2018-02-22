@@ -1,18 +1,15 @@
 # compile vhdl design source files
 vhdl xil_defaultlib  \
 "../../../../Anomaly_detection.srcs/sources_1/ip/mult_gen_0/sim/mult_gen_0.vhd" \
+
+vhdl2008 xil_defaultlib  \
 "../../../../Anomaly_detection.srcs/sources_1/new/common_types_and_functions.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/gauss_jordan_pkg.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/Transpose.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/Correlation.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/inverse_matrix.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/fsm_inverse_matrix.vhd" \
-
-vhdl2008 xil_defaultlib  \
 "../../../../Anomaly_detection.srcs/sources_1/new/forward_elim_gauss.vhd" \
-
-vhdl xil_defaultlib  \
-"../../../../Anomaly_detection.srcs/sim_1/new/Correlation_testbench.vhd" \
 "../../../../Anomaly_detection.srcs/sim_1/new/corr_tb.vhd" \
 "../../../../Anomaly_detection.srcs/sim_1/new/inverse_matrix_tb.vhd" \
 "../../../../Anomaly_detection.srcs/sim_1/new/tb_forward_elimination.vhd" \

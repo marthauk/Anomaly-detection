@@ -48,7 +48,8 @@ signal r, r_in : matrix_reg_type; --cointains all registered values
 
 begin 
 
-comb: process(M,r,reset)
+--comb: process(M,r,reset)
+comb: process(all)
 variable v: matrix_reg_type;	
 -- temporary variables
 --variable A_row_i_temp : matrix_32( 0 to 0, 0 to P_BANDS-1 );
@@ -70,9 +71,9 @@ begin
                     end if;
                 end loop;
         end if;
-        if (M.matrix(i,i) = std_logic_vector(to_unsigned(0,32))) then
+       if (M.matrix(i,i) = std_logic_vector(to_unsigned(0,32))) then
 			--matrix is singular, output some kind of error      
-        end if;
+       end if;
         for p in i+1 to P_BANDS-1 loop
         	for l in 0 to P_BANDS-1 loop
         		v.matrix(p,l) := std_logic_vector(to_signed(to_integer(signed(M.matrix(p,l)))- to_integer(signed(M.matrix(i,l)))*to_integer(signed(M.matrix(p,i)))/to_integer(signed(M.matrix(i,i))),32));

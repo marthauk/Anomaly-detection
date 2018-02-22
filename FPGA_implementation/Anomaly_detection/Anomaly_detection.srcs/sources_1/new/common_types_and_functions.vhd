@@ -55,6 +55,11 @@ package Common_types_and_functions is
         matrix :        matrix_32 (0 to P_BANDS-1 ,0 to P_BANDS-1);
         matrix_inv :    matrix_32 (0 to P_BANDS-1 ,0 to P_BANDS-1);
     end record;
+    
+    constant C_MATRIX_REG_TYPE_INIT : matrix_reg_type :=(
+    	matrix =>(others=>(others=>(others=>'0'))),
+    	matrix_inv =>(others=>(others=>(others=>'0'))));
+
 
 end Common_types_and_functions;
 
