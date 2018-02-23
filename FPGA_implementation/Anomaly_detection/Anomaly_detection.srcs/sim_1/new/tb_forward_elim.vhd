@@ -37,47 +37,40 @@ use work.Common_types_and_functions.all;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity corr_tb is
+entity tb_forward_elim is
 --  Port ( );
-end corr_tb;
+end tb_forward_elim;
 
-architecture Behavioral of corr_tb is
+architecture Behavioral of tb_forward_elim is
 
 -- device under test
-component Correlation is 
-port( M :               in matrix (0 to P_BANDS-1, 0 to N_PIXELS-1);
-      clk :             in std_logic;
-      reset :           in std_logic;
-      pixel_index :     in std_logic_vector(log2(N_PIXELS) downto 0);
-      out_corr_M :      inout matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
-      clk_en :          in std_logic;
-      corr_finished:    inout std_logic
-      );
+component forward_elim_gauss is 
+port(  clk :                           in std_logic;
+           reset :                         in std_logic;
+           clk_en :                        in std_logic;
+           M :                             in matrix_reg_type;
+           M_forward_elimination :         out matrix_reg_type
+           ); 
  end component;
 -- inputs 
 
- signal M:              matrix(0 to P_BANDS-1, 0 to N_PIXELS-1);
+
  signal clk :           std_logic := '0';
  signal clk_en :           std_logic := '1';
- signal pixel_index :   std_logic_vector(log2(N_PIXELS) downto 0):= (others=>'0') ;
- signal ready   :       std_logic:='0';
  signal reset :         std_logic:='0';
  --outputs
-signal out_corr_M :    matrix_32(0 to P_BANDS-1, 0 to P_BANDS-1);
-signal corr_finished_s : std_logic ;--:='0';
-
+signal M :  							matrix_reg_type := C_MATRIX_REG_TYPE_INIT;
+ signal M_forward_elimination :  		matrix_reg_type := C_MATRIX_REG_TYPE_INIT;
 
 constant CLK_PERIOD : time := 10 ns;
 begin
 
-    dut : Correlation port map(
+    dut : forward_elim_gauss port map(
            clk => clk,
            reset=> reset,
            clk_en => clk_en,
-           M => M,
-           pixel_index=> pixel_index,
-           out_corr_M => out_corr_M,
-           corr_finished=> corr_finished_s
+       	   M=> M,
+       	   M_forward_elimination => M_forward_elimination
            );
 
     -- clock process definition( clock with 50% duty cycle defined here)
@@ -100,30 +93,18 @@ begin
         --for i in 0 to P_BANDS-1 loop
           --for j in 0 to N_PIXELS-1 loop   
           -- M(i,j) <= std_logic_vector(to_unsigned(j,16));
-        M(0,0)<=std_logic_vector(to_unsigned(1,16));
-        M(0,1)<=std_logic_vector(to_unsigned(3,16));
-        M(0,2)<=std_logic_vector(to_unsigned(1,16));
-        M(1,0)<=std_logic_vector(to_unsigned(2,16));
-        M(1,1)<=std_logic_vector(to_unsigned(3,16));
-        M(1,2)<=std_logic_vector(to_unsigned(2,16));
-        M(2,0)<=std_logic_vector(to_unsigned(6,16));
-        M(2,1)<=std_logic_vector(to_unsigned(8,16));
-        M(2,2)<=std_logic_vector(to_unsigned(7,16));
+        M.matrix(0,0)<=std_logic_vector(to_unsigned(1,16));
+        M.matrix(0,1)<=std_logic_vector(to_unsigned(3,16));
+        M.matrix(0,2)<=std_logic_vector(to_unsigned(1,16));
+        M.matrix(1,0)<=std_logic_vector(to_unsigned(2,16));
+        M.matrix(1,1)<=std_logic_vector(to_unsigned(3,16));
+        M.matrix(1,2)<=std_logic_vector(to_unsigned(2,16));
+        M.matrix(2,0)<=std_logic_vector(to_unsigned(6,16));
+        M.matrix(2,1)<=std_logic_vector(to_unsigned(8,16));
+        M.matrix(2,2)<=std_logic_vector(to_unsigned(7,16));
 
-
-           ready <= '1';
-           --pixel_index <= pixel_index + std_logic_vector(to_unsigned(1,log2(N_PIXELS)));
-   --      end loop;
-     --   end loop;
         wait for CLK_PERIOD *300;
     end process stim_proc;
     
-   process(clk)
-    begin
-        if rising_edge(clk) and ready ='1'  then
-            if (to_integer(unsigned(pixel_index)) < N_PIXELS-1) then
-                pixel_index <=pixel_index + 1;
-            end if;
-        end if;
-    end process;
+ 
 end Behavioral;

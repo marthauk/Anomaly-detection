@@ -1,23 +1,3 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 02/17/2018 03:09:31 PM
--- Design Name: 
--- Module Name: forward_elim_gauss - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
-
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -25,14 +5,6 @@ USE ieee.numeric_std.all;
 
 library work;
 use work.Common_types_and_functions.all;
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 
 entity forward_elim_gauss is
   Port (    clk :                           in std_logic;
@@ -48,18 +20,15 @@ signal r, r_in : matrix_reg_type; --cointains all registered values
 
 begin 
 
---comb: process(M,r,reset)
-comb: process(all)
+comb: process(M,r,reset)
+--comb: process(all)
 variable v: matrix_reg_type;	
--- temporary variables
---variable A_row_i_temp : matrix_32( 0 to 0, 0 to P_BANDS-1 );
---variable A_j_i_temp :   std_logic_vector(0 to 31);
---variable A_i_i_temp :   std_logic_vector(0 to 31);
+
 
 begin
     v:= r;
-    --v.matrix := M.matrix;
-    --v.matrix_inv := M.matrix_inv;
+   -- v.matrix := M.matrix;
+   -- v.matrix_inv := M.matrix_inv;
     for i in 0 to P_BANDS-1 loop
         if(M.matrix(i,i) = std_logic_vector(to_unsigned(0,32))) then
                 for j in i+1 to P_BANDS-1 loop

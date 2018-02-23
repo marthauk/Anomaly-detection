@@ -96,6 +96,10 @@ dut : forward_elim_gauss port map(
              M.matrix(1,0)<=std_logic_vector(to_unsigned(2,16));
              M.matrix(1,1)<=std_logic_vector(to_unsigned(3,16));
              M.matrix(1,2)<=std_logic_vector(to_unsigned(2,16));
+             M.matrix(2,0)<=std_logic_vector(to_unsigned(6,16));
+             M.matrix(2,1)<=std_logic_vector(to_unsigned(8,16));
+             M.matrix(2,2)<=std_logic_vector(to_unsigned(7,16));
+
            
           wait for CLK_PERIOD *300;
       end process stim_proc;
