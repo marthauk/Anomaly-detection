@@ -2,10 +2,10 @@
 # Webtalk v2017.4 (64-bit)
 # SW Build 2086221 on Fri Dec 15 20:55:39 MST 2017
 # IP Build 2085800 on Fri Dec 15 22:25:07 MST 2017
-# Start of session at: Sat Feb 17 11:16:15 2018
-# Process ID: 10500
+# Start of session at: Fri Feb 23 10:56:58 2018
+# Process ID: 8464
 # Current directory: E:/One Drive/OneDrive for Business/NTNU/Master/Anomaly-detection/FPGA_implementation/Anomaly_detection/Anomaly_detection.sim/sim_1/behav/xsim
-# Command line: wbtcv.exe -mode batch -source E:/One Drive/OneDrive for Business/NTNU/Master/Anomaly-detection/FPGA_implementation/Anomaly_detection/Anomaly_detection.sim/sim_1/behav/xsim/xsim.dir/inverse_matrix_tb_behav/webtalk/xsim_webtalk.tcl -notrace
+# Command line: wbtcv.exe -mode batch -source E:/One Drive/OneDrive for Business/NTNU/Master/Anomaly-detection/FPGA_implementation/Anomaly_detection/Anomaly_detection.sim/sim_1/behav/xsim/xsim.dir/tb_forward_elimination_behav/webtalk/xsim_webtalk.tcl -notrace
 # Log file: E:/One Drive/OneDrive for Business/NTNU/Master/Anomaly-detection/FPGA_implementation/Anomaly_detection/Anomaly_detection.sim/sim_1/behav/xsim/webtalk.log
 # Journal file: E:/One Drive/OneDrive for Business/NTNU/Master/Anomaly-detection/FPGA_implementation/Anomaly_detection/Anomaly_detection.sim/sim_1/behav/xsim\webtalk.jou
 #-----------------------------------------------------------
