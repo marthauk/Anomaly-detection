@@ -1,0 +1,78 @@
+-------------------------------------------------------------------------------
+-- Title      : Testbench for design "backward_elim_gauss"
+-- Project    : 
+-------------------------------------------------------------------------------
+-- File       : backward_elim_gauss_tb.vhd
+-- Author     :   <Martin@MARTIN-PC>
+-- Company    : 
+-- Created    : 2018-02-25
+-- Last update: 2018-02-25
+-- Platform   : 
+-- Standard   : VHDL'93/02
+-------------------------------------------------------------------------------
+-- Description: 
+-------------------------------------------------------------------------------
+-- Copyright (c) 2018 
+-------------------------------------------------------------------------------
+-- Revisions  :
+-- Date        Version  Author  Description
+-- 2018-02-25  1.0      Martin	Created
+-------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+-------------------------------------------------------------------------------
+
+entity backward_elim_gauss_tb is
+
+end entity backward_elim_gauss_tb;
+
+-------------------------------------------------------------------------------
+
+architecture behavioral of backward_elim_gauss_tb is
+
+  -- component ports
+  signal clk               : std_logic;
+  signal reset             : std_logic;
+  signal clk_en            : std_logic;
+  signal row               : row_reg_type;
+  signal backward_elim_row : row_reg_type;
+
+  -- clock
+  signal Clk : std_logic := '1';
+
+begin  -- architecture behavioral
+
+  -- component instantiation
+  DUT: entity work.backward_elim_gauss
+    port map (
+      clk               => clk,
+      reset             => reset,
+      clk_en            => clk_en,
+      row               => row,
+      backward_elim_row => backward_elim_row);
+
+  -- clock generation
+  Clk <= not Clk after 10 ns;
+
+  -- waveform generation
+  WaveGen_Proc: process
+  begin
+    -- insert signal assignments here
+
+    wait until Clk = '1';
+  end process WaveGen_Proc;
+
+  
+
+end architecture behavioral;
+
+-------------------------------------------------------------------------------
+
+configuration backward_elim_gauss_tb_behavioral_cfg of backward_elim_gauss_tb is
+  for behavioral
+  end for;
+end backward_elim_gauss_tb_behavioral_cfg;
+
+-------------------------------------------------------------------------------

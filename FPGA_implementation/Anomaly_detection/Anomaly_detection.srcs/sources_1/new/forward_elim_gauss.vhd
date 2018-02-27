@@ -20,43 +20,57 @@ signal r, r_in : matrix_reg_type; --cointains all registered values
 
 begin 
 
-comb: process(M,r,reset)
+  comb : process(M, r, reset)
 --comb: process(all)
-variable v: matrix_reg_type;	
+    variable v : matrix_reg_type;
+    variable temp_i_i : std_logic_vector(31 downto 0);
+    variable temp_p_l : std_logic_vector(31 downto 0);
+    variable temp_p_i : std_logic_vector(31 downto 0); 
 
 
-begin
-    v:= r;
-   -- v.matrix := M.matrix;
-   -- v.matrix_inv := M.matrix_inv;
+  begin
+    v := r;
+    v.matrix := M.matrix;
+    v.matrix_inv := M.matrix_inv;
+    if(M.state_reg.state = STATE_BACKWARD_ELIMINATION and M.state_reg.state = STATE_BACKWARD_ELIMINATION) then
+ ) then
     for i in 0 to P_BANDS-1 loop
-        if(M.matrix(i,i) = std_logic_vector(to_unsigned(0,32))) then
-                for j in i+1 to P_BANDS-1 loop
-                    if(M.matrix(j,j) = std_logic_vector(to_unsigned(0,32))) then
-                        for k in 0 to P_BANDS-1 loop	
-                        	v.matrix(i,k) := M.matrix(j,k);
-                        	v.matrix(j,k) := M.matrix(i,k);
-                        end loop;
-                    end if;
-                end loop;
-        end if;
-       if (M.matrix(i,i) = std_logic_vector(to_unsigned(0,32))) then
-			--matrix is singular, output some kind of error      
-       end if;
-        for p in i+1 to P_BANDS-1 loop
-        	for l in 0 to P_BANDS-1 loop
-        		v.matrix(p,l) := std_logic_vector(to_signed(to_integer(signed(M.matrix(p,l)))- to_integer(signed(M.matrix(i,l)))*to_integer(signed(M.matrix(p,i)))/to_integer(signed(M.matrix(i,i))),32));
-        		v.matrix_inv(p,l) := std_logic_vector(to_signed(to_integer(signed(M.matrix_inv(p,l)))- to_integer(signed(M.matrix_inv(i,l)))*to_integer(signed(M.matrix(p,i)))/to_integer(signed(M.matrix(i,i))),32));
-        	end loop;
-        end loop;     
+      if(M.matrix(i, i) = std_logic_vector(to_unsigned(0, 32))) then
+        for j in i+1 to P_BANDS-1 loop
+          if(M.matrix(j, j) /= std_logic_vector(to_unsigned(0, 32))) then
+            for k in 0 to P_BANDS-1 loop
+              temp_i_i := M.matrix(i,k); 
+              v.matrix(i, k) := v.matrix(j,k);
+              --v.matrix(j, k) := M.matrix(i,k);
+              v.matrix(j,k) := temp_i_i;
+            end loop;
+          end if;
+        end loop;
+      end if;
+      if (M.matrix(i, i) = std_logic_vector(to_unsigned(0, 32))) then
+      --matrix is singular, output some kind of error      
+      end if;
+      for p in i+1 to P_BANDS-1 loop
+        for l in 0 to P_BANDS-1 loop
+          if (M.matrix(i, i) /= std_logic_vector(to_unsigned(0, 32))) then
+            temp_p_l:= v.matrix(p,l);
+            temp_p_i:= v.matrix(i,i);
+            --v.matrix(p, l)     := std_logic_vector(to_signed(to_integer(signed(M.matrix(p, l)))- to_integer(signed(M.matrix(i, l)))*to_integer(signed(M.matrix(p, i)))/to_integer(signed(M.matrix(i, i))), 32));
+            v.matrix(p, l)     := std_logic_vector(to_signed(to_integer(signed(v.matrix(p,l)))- to_integer(signed(v.matrix(i, l)))*to_integer(signed(v.matrix(p, i)))/to_integer(signed(v.matrix(i, i))), 32));
+            --v.matrix_inv(p, l) := std_logic_vector(to_signed(to_integer(signed(M.matrix_inv(p, l)))- to_integer(signed(M.matrix_inv(i, l)))*to_integer(signed(M.matrix(p, i)))/to_integer(signed(M.matrix(i, i))), 32));
+            v.matrix_inv(p, l) := std_logic_vector(to_signed(to_integer(signed(v.matrix_inv(p, l)))- to_integer(signed(v.matrix_inv(i, l)))*to_integer(signed(temp_p_l))/to_integer(signed(temp_p_i)), 32));
+          end if;
+        end loop;
+      end loop;
     end loop;
     if (reset ='1') then
        	v.matrix := (others=>(others=>(others=>'0')));
      	v.matrix_inv := (others=>(others=>(others=>'0')));
     end if;
+    end if;
     r_in <= v;
     M_forward_elimination.matrix <= r.matrix;
-	M_forward_elimination.matrix_inv <= r.matrix_inv;      
+    M_forward_elimination.matrix_inv <= r.matrix_inv;      
     
 end process;
 

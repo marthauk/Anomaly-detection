@@ -24,7 +24,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 library work;
 use work.Common_types_and_functions.all;
-use work.gauss_jordan_pkg.all;
+--use work.gauss_jordan_pkg.all;
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
 --use IEEE.NUMERIC_STD.ALL;

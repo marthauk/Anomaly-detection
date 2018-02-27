@@ -100,7 +100,15 @@ dut : forward_elim_gauss port map(
              M.matrix(2,1)<=std_logic_vector(to_unsigned(8,16));
              M.matrix(2,2)<=std_logic_vector(to_unsigned(7,16));
 
-           
+             M.matrix_inv(0,0)<=std_logic_vector(to_unsigned(0,16));
+        	M.matrix_inv(0,1)<=std_logic_vector(to_unsigned(0,16));
+        	M.matrix_inv(0,2)<=std_logic_vector(to_unsigned(1,16));
+        	M.matrix_inv(1,0)<=std_logic_vector(to_unsigned(0,16));
+        	M.matrix_inv(1,1)<=std_logic_vector(to_unsigned(1,16));
+        	M.matrix_inv(1,2)<=std_logic_vector(to_unsigned(0,16));
+        	M.matrix_inv(2,0)<=std_logic_vector(to_unsigned(1,16));
+        	M.matrix_inv(2,1)<=std_logic_vector(to_unsigned(0,16));
+        	M.matrix_inv(2,2)<=std_logic_vector(to_unsigned(0,16));
           wait for CLK_PERIOD *300;
       end process stim_proc;
       
