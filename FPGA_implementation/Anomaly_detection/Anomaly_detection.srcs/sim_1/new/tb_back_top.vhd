@@ -60,7 +60,7 @@ architecture Behavioral of tb_back_top is
 begin  -- architecture Behavioral
 
   -- component instantiation
-  DUT : entity work.top_backward_elim
+  DUT : entity work.backward_elim_inner_loop_controller
     port map (
       clk    => clk,
       reset  => reset,
@@ -83,6 +83,7 @@ begin  -- architecture Behavioral
     clk_en<='1';
     M.state_reg.state <= STATE_BACKWARD_ELIMINATION;
     M.state_reg.fsm_start_signal <= START_BACKWARD_ELIMINATION;
+    M.state_reg.drive <= STATE_IDLE_DRIVE;
     M.valid_matrix_data <= '1';
     M.row_reg.a_i_i <= std_logic_vector(to_unsigned(7, 32));
     M.row_reg.backward_elim_index_i <= std_logic_vector(to_unsigned(2, 32));

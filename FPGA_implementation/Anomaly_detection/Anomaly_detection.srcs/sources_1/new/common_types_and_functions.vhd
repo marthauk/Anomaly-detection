@@ -62,6 +62,7 @@ package Common_types_and_functions is
   constant START_BACKWARD_ELIMINATION     : std_logic_vector(1 downto 0) := "10";
   constant START_IDENTITY_MATRIX_BUILDING : std_logic_vector(1 downto 0) := "11";
 
+
   type state_type is (STATE_IDLE, STATE_FORWARD_ELIMINATION, STATE_BACKWARD_ELIMINATION, STATE_IDENTITY_MATRIX_BUILDING);
 
   type reg_state_type is record
@@ -79,8 +80,6 @@ package Common_types_and_functions is
     a_i_i                 : std_logic_vector(0 to 31);
     backward_elim_index_i : std_logic_vector(0 to 31);  -- outer loop index
     backward_elim_index_j : std_logic_vector(0 to 31);  -- inner loop index
-    backward_elim_index_j_prev : std_logic_vector(0 to 31);  -- inner loop
-                                                             -- index prev
     valid_data            : std_logic;
   end record;
 
@@ -101,7 +100,6 @@ package Common_types_and_functions is
     a_i_i                 => (others => '0'),
     backward_elim_index_i => (others => '0'),
     backward_elim_index_j => (others => '0'),
-    backward_elim_index_j_prev => (others => '0'),
     valid_data            => '0'
     );
 

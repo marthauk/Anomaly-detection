@@ -55,7 +55,7 @@ architecture Behavioral of tb_back_top is
   signal M_backward_elim : matrix_reg_type;
 
   -- clock
-  signal clk : std_logic := '0';
+  signal clk : std_logic := '1';
 
 begin  -- architecture Behavioral
 
@@ -70,7 +70,7 @@ begin  -- architecture Behavioral
 
 
   -- clock generation
-  clk <= not clk after 10 ns;
+  clk <= not clk after 5 ns;
 
   -- waveform generation
   WaveGen_Proc : process
@@ -84,8 +84,8 @@ begin  -- architecture Behavioral
     M.state_reg.state <= STATE_BACKWARD_ELIMINATION;
     M.state_reg.fsm_start_signal <= START_BACKWARD_ELIMINATION;
     M.valid_matrix_data <= '1';
-    M.a_i_i <= std_logic_vector(to_unsigned(7, 32));
-    M.backward_elim_index_i <= std_logic_vector(to_unsigned(2, 32));
+    M.row_reg.a_i_i <= std_logic_vector(to_unsigned(7, 32));
+    M.row_reg.backward_elim_index_i <= std_logic_vector(to_unsigned(2, 32));
     
     M.matrix(0, 0) <= std_logic_vector(to_unsigned(1, 32));
     M.matrix(0, 1) <= std_logic_vector(to_unsigned(3, 32));
@@ -100,19 +100,18 @@ begin  -- architecture Behavioral
     M.matrix(2, 2) <= std_logic_vector(to_unsigned(7, 32));
     -- 
 
-    M.matrix_inv(0, 0) <= std_logic_vector(to_unsigned(0, 32));
+    M.matrix_inv(0, 0) <= std_logic_vector(to_unsigned(1, 32));
     M.matrix_inv(0, 1) <= std_logic_vector(to_unsigned(0, 32));
-    M.matrix_inv(0, 2) <= std_logic_vector(to_unsigned(1, 32));
+    M.matrix_inv(0, 2) <= std_logic_vector(to_unsigned(0, 32));
     M.matrix_inv(1, 0) <= std_logic_vector(to_unsigned(0, 32));
     M.matrix_inv(1, 1) <= std_logic_vector(to_unsigned(1, 32));
     M.matrix_inv(1, 2) <= std_logic_vector(to_unsigned(0, 32));
-    M.matrix_inv(2, 0) <= std_logic_vector(to_unsigned(1, 32));
+    M.matrix_inv(2, 0) <= std_logic_vector(to_unsigned(0, 32));
     M.matrix_inv(2, 1) <= std_logic_vector(to_unsigned(0, 32));
-    M.matrix_inv(2, 2) <= std_logic_vector(to_unsigned(0, 32));
+    M.matrix_inv(2, 2) <= std_logic_vector(to_unsigned(1, 32));
     wait for 10 ns;
     M.state_reg.fsm_start_signal <= STATE_IDLE_DRIVE;
-    
-    wait until Clk = '1';
+    wait for 300 ns;
   end process WaveGen_Proc;
 
 
