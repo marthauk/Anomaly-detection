@@ -25,7 +25,6 @@ use IEEE.STD_LOGIC_ARITH.all;
 use ieee.numeric_std.all;
 
 library work;
-use work.gauss_jordan_pkg.all;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -54,9 +53,27 @@ package Common_types_and_functions is
   function log2(i   : natural) return integer;
   function sel (n   : natural) return integer;
 
+  constant STATE_IDLE_DRIVE                        : std_logic_vector(1 downto 0) := "00";
+  constant STATE_FORWARD_ELIMINATION_FINISHED      : std_logic_vector(1 downto 0) := "01";
+  constant STATE_BACKWARD_ELIMINATION_FINISHED     : std_logic_vector(1 downto 0) := "10";
+  constant STATE_IDENTITY_MATRIX_BUILDING_FINISHED : std_logic_vector(1 downto 0) := "11";
+
+  constant START_FORWARD_ELIMINATION      : std_logic_vector(1 downto 0) := "01";
+  constant START_BACKWARD_ELIMINATION     : std_logic_vector(1 downto 0) := "10";
+  constant START_IDENTITY_MATRIX_BUILDING : std_logic_vector(1 downto 0) := "11";
+
+  type state_type is (STATE_IDLE, STATE_FORWARD_ELIMINATION, STATE_BACKWARD_ELIMINATION, STATE_IDENTITY_MATRIX_BUILDING);
+
+  type reg_state_type is record
+    state : state_type;
+    drive : std_logic_vector(1 downto 0);
+    fsm_start_signal : std_logic_vector(1 downto 0);
+  end record;
+
   type matrix_reg_type is record
     matrix     : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
     matrix_inv : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
+    valid_matrix_data : std_logic;
     state_reg  : reg_state_type;
   end record;
 
@@ -67,15 +84,32 @@ package Common_types_and_functions is
     inv_row_i             : matrix_32(0 to 0, 0 to P_BANDS-1);
     a_j_i                 : std_logic_vector(0 to 31);
     a_i_i                 : std_logic_vector(0 to 31);
-    backward_elim_index_i : std_logic_vector(0 to 31);
-    backward_elim_index_j : std_logic_vector(0 to 31);
+    backward_elim_index_i : std_logic_vector(0 to 31);  -- outer loop index
+    backward_elim_index_j : std_logic_vector(0 to 31);  -- inner loop index
     valid_data            : std_logic;
   end record;
 
   constant C_MATRIX_REG_TYPE_INIT : matrix_reg_type := (
     matrix     => (others => (others => (others => '0'))),
-    matrix_inv => (others => (others => (others => '0'))));
-
+    matrix_inv => (others => (others => (others => '0'))),
+    valid_matrix_data => '0',
+    state_reg => (
+      state => STATE_IDLE,
+      drive => STATE_IDLE_DRIVE,
+      fsm_start_signal => STATE_IDLE_DRIVE
+      )
+    );
+  constant C_ROW_REG_TYPE_INIT : row_reg_type := (
+    row_j                 => (others => (others => (others => '0'))),
+    row_i                 => (others => (others => (others => '0'))),
+    inv_row_j             => (others => (others => (others => '0'))),
+    inv_row_i             => (others => (others => (others => '0'))),
+    a_j_i                 => (others => '0'),
+    a_i_i                 => (others => '0'),
+    backward_elim_index_i => (others => '0'),
+    backward_elim_index_j => (others => '0'),
+    valid_data            => '0'
+    );
 
 end Common_types_and_functions;
 

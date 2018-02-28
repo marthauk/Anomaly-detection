@@ -13,7 +13,8 @@ vhdl xil_defaultlib  \
 "../../../../Anomaly_detection.srcs/sim_1/new/inverse_matrix_tb.vhd" \
 "../../../../Anomaly_detection.srcs/sim_1/new/tb_forward_elimination.vhd" \
 "../../../../Anomaly_detection.srcs/sim_1/new/backward_elim_gauss_tb.vhd" \
-"../../../../Anomaly_detection.srcs/sim_1/new/top_backward_elim_gauss_tb.vhd" \
+"../../../../Anomaly_detection.srcs/sim_1/new/top_backward_tb_elim_gauss.vhd" \
+"../../../../Anomaly_detection.srcs/sim_1/new/tb_back_top.vhd" \
 
 # Do not sort compile order
 nosort

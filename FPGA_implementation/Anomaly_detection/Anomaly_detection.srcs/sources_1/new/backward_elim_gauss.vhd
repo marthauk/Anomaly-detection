@@ -20,7 +20,7 @@ architecture Behavioral of backward_elim_gauss is
 
 begin
 
-  comb : process(row,r, r_in, reset)
+  comb : process(row,r,  reset)
     variable v : row_reg_type;
 
   begin
@@ -31,6 +31,8 @@ begin
     v.inv_row_i := row.inv_row_i;
     v.a_j_i     := row.a_j_i;
     v.a_i_i     := row.a_i_i;
+    v.backward_elim_index_j:= row.backward_elim_index_j;
+    v.backward_elim_index_i:= row.backward_elim_index_i;
 
     if(row.valid_data = '1') then
       for i in 0 to P_BANDS-1 loop

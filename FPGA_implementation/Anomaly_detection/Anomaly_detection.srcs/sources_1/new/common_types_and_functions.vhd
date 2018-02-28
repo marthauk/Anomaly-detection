@@ -70,13 +70,6 @@ package Common_types_and_functions is
     fsm_start_signal : std_logic_vector(1 downto 0);
   end record;
 
-  type matrix_reg_type is record
-    matrix     : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
-    matrix_inv : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
-    valid_matrix_data : std_logic;
-    state_reg  : reg_state_type;
-  end record;
-
   type row_reg_type is record
     row_j                 : matrix_32(0 to 0, 0 to P_BANDS-1);
     row_i                 : matrix_32(0 to 0, 0 to P_BANDS-1);
@@ -86,19 +79,19 @@ package Common_types_and_functions is
     a_i_i                 : std_logic_vector(0 to 31);
     backward_elim_index_i : std_logic_vector(0 to 31);  -- outer loop index
     backward_elim_index_j : std_logic_vector(0 to 31);  -- inner loop index
+    backward_elim_index_j_prev : std_logic_vector(0 to 31);  -- inner loop
+                                                             -- index prev
     valid_data            : std_logic;
   end record;
 
-  constant C_MATRIX_REG_TYPE_INIT : matrix_reg_type := (
-    matrix     => (others => (others => (others => '0'))),
-    matrix_inv => (others => (others => (others => '0'))),
-    valid_matrix_data => '0',
-    state_reg => (
-      state => STATE_IDLE,
-      drive => STATE_IDLE_DRIVE,
-      fsm_start_signal => STATE_IDLE_DRIVE
-      )
-    );
+  type matrix_reg_type is record
+    matrix     : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
+    matrix_inv : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
+    valid_matrix_data : std_logic;
+    row_reg : row_reg_type;
+    state_reg  : reg_state_type;
+  end record;
+
   constant C_ROW_REG_TYPE_INIT : row_reg_type := (
     row_j                 => (others => (others => (others => '0'))),
     row_i                 => (others => (others => (others => '0'))),
@@ -108,9 +101,22 @@ package Common_types_and_functions is
     a_i_i                 => (others => '0'),
     backward_elim_index_i => (others => '0'),
     backward_elim_index_j => (others => '0'),
+    backward_elim_index_j_prev => (others => '0'),
     valid_data            => '0'
     );
 
+
+  constant C_MATRIX_REG_TYPE_INIT : matrix_reg_type := (
+    matrix     => (others => (others => (others => '0'))),
+    matrix_inv => (others => (others => (others => '0'))),
+    valid_matrix_data => '0',
+    row_reg => C_ROW_REG_TYPE_INIT,
+    state_reg => (
+      state => STATE_IDLE,
+      drive => STATE_IDLE_DRIVE,
+      fsm_start_signal => STATE_IDLE_DRIVE
+      )
+    );
 end Common_types_and_functions;
 
 package body Common_types_and_functions is
