@@ -16,7 +16,7 @@ end backward_elim_inner_loop_controller;
 architecture Behavioral of backward_elim_inner_loop_controller is
 
   signal backward_elim_row : row_reg_type;
-  signal r, r_in           : matrix_reg_type;
+  signal r, r_in           : matrix_reg_type := C_MATRIX_REG_TYPE_INIT;
 
 begin
 
@@ -33,16 +33,23 @@ begin
     variable v : matrix_reg_type;
 
   begin
-    v := r;
+    v                            := r;
+    v.state_reg.start_inner_loop := M.state_reg.start_inner_loop;
 
-    if(M.state_reg.state = STATE_BACKWARD_ELIMINATION and not (r.state_reg.drive = STATE_BACKWARD_ELIMINATION_FINISHED)) then
-      if(M.state_reg.fsm_start_signal = START_BACKWARD_ELIMINATION and M.valid_matrix_data = '1') then
+    if(v.state_reg.start_inner_loop = '1') then
+      v.state_reg.inner_loop_iter_finished := '0';
+    end if;
+
+    --if(M.state_reg.state = STATE_BACKWARD_ELIMINATION and not (v.state_reg.inner_loop_iter_finished = '1')) then
+    if(M.state_reg.state = STATE_BACKWARD_ELIMINATION ) then
+      if(M.state_reg.start_inner_loop = '1' and M.valid_matrix_data = '1') then
         -- Load matrix and set index_j
-        v                               := M;
-        v.row_reg.backward_elim_index_j := std_logic_vector(to_signed(to_integer(unsigned(v.row_reg.backward_elim_index_i))-1, 32));
-        v.row_reg.valid_data            := '1';
+        v                                    := M;
+        v.row_reg.backward_elim_index_j      := std_logic_vector(to_signed(to_integer(unsigned(M.row_reg.backward_elim_index_i))-1, 32));
+        v.row_reg.valid_data                 := '1';
+        v.state_reg.inner_loop_iter_finished := '0';
       end if;
-        -- Have loaded
+      -- Have loaded
       if(backward_elim_row.valid_data = '1') then
         -- Received backward elim data-- update Matrix 
         for p in 0 to P_BANDS-1 loop
@@ -51,26 +58,37 @@ begin
         end loop;
       end if;
 
-      v.row_reg.a_j_i := v.matrix(to_integer(unsigned(v.row_reg.backward_elim_index_j)), to_integer(unsigned(v.row_reg.backward_elim_index_i)));
-      for p in 0 to P_BANDS-1 loop
-        v.row_reg.row_j(0, p)     := v.matrix(to_integer(unsigned(v.row_reg.backward_elim_index_j)), p);
-        v.row_reg.row_i(0, p)     := v.matrix(to_integer(unsigned(v.row_reg.backward_elim_index_i)), p);
-        v.row_reg.inv_row_j(0, p) := v.matrix_inv(to_integer(unsigned(v.row_reg.backward_elim_index_j)), p);
-        v.row_reg.inv_row_i(0, p) := v.matrix_inv(to_integer(unsigned(v.row_reg.backward_elim_index_i)), p);
-      end loop;
-      if(backward_elim_row.backward_elim_index_j = std_logic_vector(to_unsigned(0, 32))) then
-        -- Finished backward elimination, inner loop
-        v.state_reg.drive := STATE_BACKWARD_ELIMINATION_FINISHED;
-      elsif (v.row_reg.backward_elim_index_j /= std_logic_vector(to_unsigned(0,32)) and M.state_reg.fsm_start_signal /=START_BACKWARD_ELIMINATION and M.valid_matrix_data = '1') then
-        -- Wait until we actually have registered in some matrix-value before
-        -- altering the index.
-        v.row_reg.backward_elim_index_j      := std_logic_vector(to_signed(to_integer(signed(r.row_reg.backward_elim_index_j))-1, 32));
+      if(to_integer(signed(v.row_reg.backward_elim_index_j)) >= 0) then
+        if (v.row_reg.backward_elim_index_j /= std_logic_vector(to_unsigned(0, 32)) and M.state_reg.fsm_start_signal /= START_BACKWARD_ELIMINATION and backward_elim_row.valid_data = '1') then
+          -- Wait until we actually have registered in some matrix-value before
+          -- altering the index.
+          v.row_reg.backward_elim_index_j := std_logic_vector(to_signed(to_integer(signed(r.row_reg.backward_elim_index_j))-1, 32));
+        end if;
+        v.row_reg.a_j_i := v.matrix(to_integer(unsigned(v.row_reg.backward_elim_index_j)), to_integer(unsigned(v.row_reg.backward_elim_index_i)));
+        --v.row_reg.a_j_i := v.matrix(to_integer(unsigned(r.row_reg.backward_elim_index_j)), to_integer(unsigned(r.row_reg.backward_elim_index_i)));
+        for p in 0 to P_BANDS-1 loop
+          v.row_reg.row_j(0, p)     := v.matrix(to_integer(unsigned(v.row_reg.backward_elim_index_j)), p);
+          v.row_reg.row_i(0, p)     := v.matrix(to_integer(unsigned(v.row_reg.backward_elim_index_i)), p);
+          v.row_reg.inv_row_j(0, p) := v.matrix_inv(to_integer(unsigned(v.row_reg.backward_elim_index_j)), p);
+          v.row_reg.inv_row_i(0, p) := v.matrix_inv(to_integer(unsigned(v.row_reg.backward_elim_index_i)), p);
+        end loop;
+        if(backward_elim_row.backward_elim_index_j <= std_logic_vector(to_unsigned(0, 32))and backward_elim_row.valid_data = '1' and v.state_reg.start_inner_loop /= '1' and r.state_reg.inner_loop_iter_finished = '0') then
+          -- Finished backward elimination, inner loop
+          v.state_reg.inner_loop_iter_finished := '1';
+        end if;
+        if(to_integer(unsigned(backward_elim_row.backward_elim_index_i)) <= 1 and backward_elim_row.valid_data = '1') then
+          -- This is the last iteration of the backward elimination, signal
+          -- to top module
+          v.state_reg.inner_loop_last_iter_finished := '1';
+        end if;
       end if;
 
     end if;
     if(reset = '1') then
-      v.row_reg.backward_elim_index_i := std_logic_vector(to_signed(P_BANDS-1, 32));
-      v.row_reg.backward_elim_index_j := std_logic_vector(to_signed(P_BANDS-2, 32));
+      v.row_reg.backward_elim_index_i           := std_logic_vector(to_signed(P_BANDS-1, 32));
+      v.row_reg.backward_elim_index_j           := std_logic_vector(to_signed(P_BANDS-2, 32));
+      v.state_reg.inner_loop_iter_finished      := '0';
+      v.state_reg.inner_loop_last_iter_finished := '0';
     end if;
     r_in            <= v;
     M_backward_elim <= r;

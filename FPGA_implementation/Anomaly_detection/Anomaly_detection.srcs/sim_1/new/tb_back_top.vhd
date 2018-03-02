@@ -84,6 +84,8 @@ begin  -- architecture Behavioral
     M.state_reg.state <= STATE_BACKWARD_ELIMINATION;
     M.state_reg.fsm_start_signal <= START_BACKWARD_ELIMINATION;
     M.state_reg.drive <= STATE_IDLE_DRIVE;
+    M.state_reg.inner_loop_iter_finished <='0';
+    M.state_reg.start_inner_loop<='1';
     M.valid_matrix_data <= '1';
     M.row_reg.a_i_i <= std_logic_vector(to_unsigned(7, 32));
     M.row_reg.backward_elim_index_i <= std_logic_vector(to_unsigned(2, 32));
@@ -112,6 +114,7 @@ begin  -- architecture Behavioral
     M.matrix_inv(2, 2) <= std_logic_vector(to_unsigned(1, 32));
     wait for 10 ns;
     M.state_reg.fsm_start_signal <= STATE_IDLE_DRIVE;
+    M.state_reg.start_inner_loop<='0';
     wait for 300 ns;
   end process WaveGen_Proc;
 

@@ -24,7 +24,7 @@ else
 fi
 export LD_LIBRARY_PATH
 
-HD_PWD='E:/One Drive/OneDrive for Business/NTNU/Master/Anomaly-detection/FPGA_implementation/Anomaly_detection/Anomaly_detection.runs/synth_1'
+HD_PWD='E:/Documents/Master_FPGA/FPGA_implementation/Anomaly_detection/Anomaly_detection.runs/synth_1'
 cd "$HD_PWD"
 
 HD_LOG=runme.log
@@ -40,4 +40,4 @@ EAStep()
      fi
 }
 
-EAStep vivado -log forward_elim_gauss.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source forward_elim_gauss.tcl
+EAStep vivado -log backward_elim_inner_loop_controller.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source backward_elim_inner_loop_controller.tcl

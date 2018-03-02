@@ -66,9 +66,12 @@ package Common_types_and_functions is
   type state_type is (STATE_IDLE, STATE_FORWARD_ELIMINATION, STATE_BACKWARD_ELIMINATION, STATE_IDENTITY_MATRIX_BUILDING);
 
   type reg_state_type is record
-    state : state_type;
-    drive : std_logic_vector(1 downto 0);
-    fsm_start_signal : std_logic_vector(1 downto 0);
+    state                         : state_type;
+    drive                         : std_logic_vector(1 downto 0);
+    fsm_start_signal              : std_logic_vector(1 downto 0);
+    inner_loop_iter_finished      : std_logic;
+    inner_loop_last_iter_finished : std_logic;
+    start_inner_loop              : std_logic;
   end record;
 
   type row_reg_type is record
@@ -84,11 +87,11 @@ package Common_types_and_functions is
   end record;
 
   type matrix_reg_type is record
-    matrix     : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
-    matrix_inv : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
+    matrix            : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
+    matrix_inv        : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
     valid_matrix_data : std_logic;
-    row_reg : row_reg_type;
-    state_reg  : reg_state_type;
+    row_reg           : row_reg_type;
+    state_reg         : reg_state_type;
   end record;
 
   constant C_ROW_REG_TYPE_INIT : row_reg_type := (
@@ -105,14 +108,17 @@ package Common_types_and_functions is
 
 
   constant C_MATRIX_REG_TYPE_INIT : matrix_reg_type := (
-    matrix     => (others => (others => (others => '0'))),
-    matrix_inv => (others => (others => (others => '0'))),
-    valid_matrix_data => '0',
-    row_reg => C_ROW_REG_TYPE_INIT,
-    state_reg => (
-      state => STATE_IDLE,
-      drive => STATE_IDLE_DRIVE,
-      fsm_start_signal => STATE_IDLE_DRIVE
+    matrix                     => (others => (others => (others => '0'))),
+    matrix_inv                 => (others => (others => (others => '0'))),
+    valid_matrix_data          => '0',
+    row_reg                    => C_ROW_REG_TYPE_INIT,
+    state_reg                  => (
+      state                    => STATE_IDLE,
+      drive                    => STATE_IDLE_DRIVE,
+      fsm_start_signal         => STATE_IDLE_DRIVE,
+      inner_loop_iter_finished => '0',
+      inner_loop_last_iter_finished => '0',
+      start_inner_loop         => '0'
       )
     );
 end Common_types_and_functions;

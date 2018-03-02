@@ -43,10 +43,10 @@ begin
          v.inv_row_j(0, i) := std_logic_vector(to_signed(to_integer(signed(v.inv_row_j(0, i))) -to_integer(signed(v.inv_row_i(0, i))) * to_integer(signed(v.a_j_i))/to_integer(signed(v.a_i_i)),32));
          v.valid_data := '1';
       end loop;
-   -- v.backward_elim_index := std_logic_vector(to_signed(to_integer(signed(v.backward_elim_index)) -1, 32));
     end if;
     if (reset = '1') then
     --  v.backward_elim_index := std_logic_vector(to_signed(P_BANDS-1, 32));
+      v.valid_data :='0';
     end if;
     backward_elim_row <= r;
     r_in              <= v;
