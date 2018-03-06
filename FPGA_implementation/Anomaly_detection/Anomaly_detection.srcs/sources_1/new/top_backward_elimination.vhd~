@@ -33,9 +33,10 @@ begin
     variable v : matrix_reg_type;
 
   begin
-    v                                    := r;
-    v.state_reg.inner_loop_iter_finished := M_backward_elim_inner.state_reg.inner_loop_iter_finished;
-    v.state_reg.fsm_start_signal         := M.state_reg.fsm_start_signal;
+    v                                         := r;
+    v.state_reg.inner_loop_iter_finished      := M_backward_elim_inner.state_reg.inner_loop_iter_finished;
+    v.state_reg.fsm_start_signal              := M.state_reg.fsm_start_signal;
+    v.state_reg.inner_loop_last_iter_finished := M_backward_elim_inner.state_reg.inner_loop_last_iter_finished;
 
     if(M.state_reg.state = STATE_BACKWARD_ELIMINATION and not(r.state_reg.drive = STATE_BACKWARD_ELIMINATION_FINISHED)) then
       if(M.state_reg.fsm_start_signal = START_BACKWARD_ELIMINATION and M.valid_matrix_data = '1') then
@@ -51,14 +52,14 @@ begin
       end if;
 
       -- Have loaded pre-backward elimination matrix
-      if(to_integer(signed(r.row_reg.backward_elim_index_i)) <= 1 and M_backward_elim_inner.row_reg.valid_data = '1' and r.state_reg.inner_loop_iter_finished = '1') then
+      if(to_integer(signed(r.row_reg.backward_elim_index_i)) <= 1 and M_backward_elim_inner.row_reg.valid_data = '1' and r.state_reg.inner_loop_last_iter_finished = '1') then
         -- Finished backward elimination
         v.state_reg.drive := STATE_BACKWARD_ELIMINATION_FINISHED;
         v.matrix          := M_backward_elim_inner.matrix;
         v.matrix_inv      := M_backward_elim_inner.matrix_inv;
-      elsif(v.state_reg.inner_loop_iter_finished = '1' and M_backward_elim_inner.row_reg.valid_data='1' and to_integer(unsigned(r.row_reg.backward_elim_index_i))>1) then
-        v.matrix          := M_backward_elim_inner.matrix;
-        v.matrix_inv      := M_backward_elim_inner.matrix_inv;
+      elsif(M_backward_elim_inner.state_reg.inner_loop_iter_finished = '1' and M_backward_elim_inner.row_reg.valid_data = '1' and to_integer(unsigned(r.row_reg.backward_elim_index_i)) > 1) then
+        v.matrix                             := M_backward_elim_inner.matrix;
+        v.matrix_inv                         := M_backward_elim_inner.matrix_inv;
         v.row_reg.backward_elim_index_i      := std_logic_vector(to_signed(to_integer(unsigned(r.row_reg.backward_elim_index_i))-1, 32));
         v.row_reg.a_i_i                      := M_backward_elim_inner.matrix(to_integer(unsigned(v.row_reg.backward_elim_index_i)), to_integer(unsigned(v.row_reg.backward_elim_index_i)));
         v.state_reg.inner_loop_iter_finished := '0';

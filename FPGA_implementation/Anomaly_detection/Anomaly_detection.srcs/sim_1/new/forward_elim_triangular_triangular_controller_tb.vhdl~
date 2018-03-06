@@ -1,79 +1,65 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 02/26/2018 03:32:49 PM
--- Design Name: 
--- Module Name: top_backward_tb_elim_gauss - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
+-------------------------------------------------------------------------------
+-- Title      : Testbench for design "forward_elim_triangular_triangular_controller"
+-- Project    : 
+-------------------------------------------------------------------------------
+-- File       : forward_elim_triangular_triangular_controller_tb.vhdl
+-- Author     :   <Martin@MARTIN-PC>
+-- Company    : 
+-- Created    : 2018-03-05
+-- Last update: 2018-03-05
+-- Platform   : 
+-- Standard   : VHDL'93/02
+-------------------------------------------------------------------------------
 -- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
-
-
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
-
+-------------------------------------------------------------------------------
+-- Copyright (c) 2018 
+-------------------------------------------------------------------------------
+-- Revisions  :
+-- Date        Version  Author  Description
+-- 2018-03-05  1.0      Martin	Created
+-------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
+
 use IEEE.numeric_std.all;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 library work;
 use work.Common_types_and_functions.all;
 -------------------------------------------------------------------------------
 
-entity tb_back_top is
+entity forward_elim_triangular_triangular_controller_tb is
 
-end entity tb_back_top;
+end entity forward_elim_triangular_triangular_controller_tb;
 
 -------------------------------------------------------------------------------
 
-architecture Behavioral of tb_back_top is
+architecture behavioral of forward_elim_triangular_triangular_controller_tb is
 
   -- component ports
-  signal reset  : std_logic;
-  signal clk_en : std_logic;
-  signal M      : matrix_reg_type;
-  signal M_backward_elim : matrix_reg_type;
+  signal clk                       : std_logic:= '1';
+  signal reset                     : std_logic;
+  signal clk_en                    : std_logic;
+  signal M                         : matrix_reg_type;
+  signal M_forward_elim_triangular : matrix_reg_type;
 
-  -- clock
-  signal clk : std_logic := '1';
 
-begin  -- architecture Behavioral
+begin  -- architecture behavioral
 
   -- component instantiation
-  DUT : entity work.backward_elim_inner_loop_controller
+  DUT: entity work.forward_elim_triangular_triangular_controller
     port map (
-      clk    => clk,
-      reset  => reset,
-      clk_en => clk_en,
-      M      => M,
-      M_backward_elim=> M_backward_elim);
-
+      clk                       => clk,
+      reset                     => reset,
+      clk_en                    => clk_en,
+      M                         => M,
+      M_forward_elim_triangular => M_forward_elim_triangular);
 
   -- clock generation
   clk <= not clk after 5 ns;
 
   -- waveform generation
-  WaveGen_Proc : process
+  WaveGen_Proc: process
   begin
     -- insert signal assignments here
     reset <= '1';
@@ -81,8 +67,10 @@ begin  -- architecture Behavioral
     reset <= '0';
     wait for 10 ns;
     clk_en<='1';
-    M.state_reg.state <= STATE_BACKWARD_ELIMINATION;
-    M.state_reg.fsm_start_signal <= START_BACKWARD_ELIMINATION;
+    M.state_reg.state <= STATE_FORWARD_ELIMINATION;
+    M.state_reg.fsm_start_signal <= START_FORWARD_ELIMINATION;
+    M.state_reg.forward_elim_state_signal <= STATE_FORWARD_TRIANGULAR;
+    M.state_reg.forward_elim_ctrl_signal <= START_FORWARD_ELIM_TRIANGULAR;
     M.state_reg.drive <= STATE_IDLE_DRIVE;
     M.state_reg.inner_loop_iter_finished <='0';
     M.state_reg.start_inner_loop<='1';
@@ -114,14 +102,20 @@ begin  -- architecture Behavioral
     M.matrix_inv(2, 2) <= std_logic_vector(to_unsigned(1, 32));
     wait for 10 ns;
     M.state_reg.fsm_start_signal <= STATE_IDLE_DRIVE;
+    M.state_reg.forward_elim_ctrl_signal <= IDLING;
     M.state_reg.start_inner_loop<='0';
     wait for 300 ns;
   end process WaveGen_Proc;
 
+  
 
-
-end architecture Behavioral;
+end architecture behavioral;
 
 -------------------------------------------------------------------------------
+
+configuration forward_elim_triangular_triangular_controller_tb_behavioral_cfg of forward_elim_triangular_triangular_controller_tb is
+  for behavioral
+  end for;
+end forward_elim_triangular_triangular_controller_tb_behavioral_cfg;
 
 -------------------------------------------------------------------------------

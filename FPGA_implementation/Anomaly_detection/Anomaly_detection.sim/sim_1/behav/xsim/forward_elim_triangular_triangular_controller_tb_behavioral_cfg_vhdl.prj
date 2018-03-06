@@ -1,5 +1,5 @@
 # compile vhdl design source files
-vhdl2008 xil_defaultlib  \
+vhdl xil_defaultlib  \
 "../../../../Anomaly_detection.srcs/sources_1/new/common_types_and_functions.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/gauss_jordan_pkg.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/Transpose.vhd" \
@@ -14,6 +14,8 @@ vhdl2008 xil_defaultlib  \
 "../../../../Anomaly_detection.srcs/sources_1/new/forward_elim_core.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/forward_elim_triangular_core.vhd" \
 "../../../../Anomaly_detection.srcs/sources_1/new/forward_elim_triangular_controller.vhd" \
+
+vhdl2008 xil_defaultlib  \
 "../../../../Anomaly_detection.srcs/sim_1/new/corr_tb.vhd" \
 "../../../../Anomaly_detection.srcs/sim_1/new/inverse_matrix_tb.vhd" \
 "../../../../Anomaly_detection.srcs/sim_1/new/tb_forward_elimination.vhd" \

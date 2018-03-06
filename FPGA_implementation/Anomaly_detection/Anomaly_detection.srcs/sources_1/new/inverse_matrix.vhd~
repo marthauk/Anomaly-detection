@@ -56,10 +56,9 @@ entity inverse_matrix is
 end inverse_matrix;
 
 architecture Behavioral of inverse_matrix is
-  signal M_identity_matrix                               : matrix_32 := create_identity_matrix(P_BANDS);
-  signal r, r_in, M_backward_elim, M_forward_elim  : matrix_reg_type;
-  signal fsm_state_reg                                   : reg_state_type;
-  signal start_inversion :std_logic;
+  signal M_identity_matrix                        : matrix_32 := create_identity_matrix(P_BANDS);
+  signal r, r_in, M_backward_elim, M_forward_elim : matrix_reg_type;
+  signal fsm_state_reg                            : reg_state_type;
 
 begin
   top_backward_elimination_1 : entity work.top_backward_elimination
@@ -95,20 +94,14 @@ begin
     v.state_reg                 := fsm_state_reg;
     v.state_reg.start_inversion := M_corr.state_reg.start_inversion;
     case v.state_reg.state is
-      when STATE_IDLE =>
+      when => STATE_IDLE =>
         v.matrix := M_corr.matrix;
       v.matrix_inv := M_identity_matrix;
-      when STATE_FORWARD_ELIMINATION =>
+      when => STATE_FORWARD_ELIMINATION =>
         v.matrix := M_forward_elim.matrix;
       v.matrix_inv := M_forward_elim.matrix_inv;
-      when STATE_BACKWARD_ELIMINATION =>
-        v.matrix := M_backward_elim.matrix;
-      v.matrix_inv := M_backward_elim.matrix_inv;
-      when STATE_IDENTITY_MATRIX_BUILDING =>
-      v.matrix_inv := M_inv.matrix_inv;
-      when others =>
-      v.matrix := M_corr.matrix;
-      v.matrix_inv := M_identity_matrix;
+      when => STATE_BACKWARD_ELIMINATION =>
+        
     end case;
     if(v.state_reg.start_inversion = '1') then
       v.matrix     := M_corr.matrix;
@@ -123,7 +116,8 @@ begin
   regs : process(clk, reset, clk_en)
   begin
     if(reset = '1') then
-      M_inv.matrix_inv          <= M_identity_matrix;
+      ctrl_inversion <= (others => '0');
+      M_inv          <= M_identity_matrix;
     elsif(rising_edge(clk) and clk_en = '1') then
       r <= r_in;
     end if;
