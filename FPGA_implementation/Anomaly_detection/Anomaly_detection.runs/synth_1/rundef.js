@@ -23,7 +23,7 @@ eval( EAInclude(ISEJScriptLib) );
 
 
 ISEStep( "vivado",
-         "-log forward_elim_gauss.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source forward_elim_gauss.tcl" );
+         "-log backward_elim_inner_loop_controller.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source backward_elim_inner_loop_controller.tcl" );
 
 
 

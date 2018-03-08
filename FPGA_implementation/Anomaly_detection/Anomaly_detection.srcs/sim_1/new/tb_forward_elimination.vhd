@@ -85,30 +85,35 @@ dut : forward_elim_gauss port map(
     
   stim_proc: process
       begin
-          clk_en <= '1';
+        
           reset <='1';
           wait for CLK_PERIOD * 2;
           reset<='0';        
           wait for CLK_PERIOD *2;
-      	     M.matrix(0,0)<=std_logic_vector(to_unsigned(1,16));
-             M.matrix(0,1)<=std_logic_vector(to_unsigned(3,16));
-             M.matrix(0,2)<=std_logic_vector(to_unsigned(1,16));
-             M.matrix(1,0)<=std_logic_vector(to_unsigned(2,16));
-             M.matrix(1,1)<=std_logic_vector(to_unsigned(3,16));
-             M.matrix(1,2)<=std_logic_vector(to_unsigned(2,16));
-             M.matrix(2,0)<=std_logic_vector(to_unsigned(6,16));
-             M.matrix(2,1)<=std_logic_vector(to_unsigned(8,16));
-             M.matrix(2,2)<=std_logic_vector(to_unsigned(7,16));
+            clk_en <= '1';
+            M.state_reg.state <= STATE_FORWARD_ELIMINATION;
+            M.state_reg.fsm_start_signal <= START_FORWARD_ELIMINATION;
+      	     M.matrix(0,0)<=std_logic_vector(to_unsigned(1,32));
+             M.matrix(0,1)<=std_logic_vector(to_unsigned(3,32));
+             M.matrix(0,2)<=std_logic_vector(to_unsigned(1,32));
+             M.matrix(1,0)<=std_logic_vector(to_unsigned(2,32));
+             M.matrix(1,1)<=std_logic_vector(to_unsigned(3,32));
+             M.matrix(1,2)<=std_logic_vector(to_unsigned(2,32));
+             M.matrix(2,0)<=std_logic_vector(to_unsigned(6,32));
+             M.matrix(2,1)<=std_logic_vector(to_unsigned(8,32));
+             M.matrix(2,2)<=std_logic_vector(to_unsigned(7,32));
 
-             M.matrix_inv(0,0)<=std_logic_vector(to_unsigned(0,16));
-        	M.matrix_inv(0,1)<=std_logic_vector(to_unsigned(0,16));
-        	M.matrix_inv(0,2)<=std_logic_vector(to_unsigned(1,16));
-        	M.matrix_inv(1,0)<=std_logic_vector(to_unsigned(0,16));
-        	M.matrix_inv(1,1)<=std_logic_vector(to_unsigned(1,16));
-        	M.matrix_inv(1,2)<=std_logic_vector(to_unsigned(0,16));
-        	M.matrix_inv(2,0)<=std_logic_vector(to_unsigned(1,16));
-        	M.matrix_inv(2,1)<=std_logic_vector(to_unsigned(0,16));
-        	M.matrix_inv(2,2)<=std_logic_vector(to_unsigned(0,16));
+             M.matrix_inv(0,0)<=std_logic_vector(to_unsigned(1,32));
+        	M.matrix_inv(0,1)<=std_logic_vector(to_unsigned(0,32));
+        	M.matrix_inv(0,2)<=std_logic_vector(to_unsigned(0,32));
+        	M.matrix_inv(1,0)<=std_logic_vector(to_unsigned(0,32));
+        	M.matrix_inv(1,1)<=std_logic_vector(to_unsigned(1,32));
+        	M.matrix_inv(1,2)<=std_logic_vector(to_unsigned(0,32));
+        	M.matrix_inv(2,0)<=std_logic_vector(to_unsigned(0,32));
+        	M.matrix_inv(2,1)<=std_logic_vector(to_unsigned(0,32));
+        	M.matrix_inv(2,2)<=std_logic_vector(to_unsigned(1,32));
+        	wait for 10 ns;
+        	M.state_reg.fsm_start_signal <= STATE_IDLE_DRIVE;
           wait for CLK_PERIOD *300;
       end process stim_proc;
       

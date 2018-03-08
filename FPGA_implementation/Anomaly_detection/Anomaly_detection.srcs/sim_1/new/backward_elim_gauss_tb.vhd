@@ -66,8 +66,8 @@ begin  -- architecture behavioral
     clk_en <='1';
     wait for 20 ns;
 
-    row.row_j(0, 0) <= std_logic_vector(to_unsigned(5, 32));
-    row.row_j(0, 1) <= std_logic_vector(to_unsigned(7, 32));
+    row.row_j(0, 0) <= std_logic_vector(to_unsigned(10, 32));
+    row.row_j(0, 1) <= std_logic_vector(to_unsigned(2, 32));
     row.row_j(0, 2) <= std_logic_vector(to_unsigned(3, 32));
 
     row.row_i(0, 0) <= std_logic_vector(to_unsigned(2, 32));

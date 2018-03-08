@@ -30,6 +30,8 @@ begin
 
   begin
     v := r;
+   
+    if(M.state_reg.state = STATE_FORWARD_ELIMINATION and M.state_reg.fsm_start_signal = START_FORWARD_ELIMINATION) then
     v.matrix := M.matrix;
     v.matrix_inv := M.matrix_inv;
     for i in 0 to P_BANDS-1 loop
@@ -51,7 +53,7 @@ begin
       for p in i+1 to P_BANDS-1 loop
         for l in 0 to P_BANDS-1 loop
           if (M.matrix(i, i) /= std_logic_vector(to_unsigned(0, 32))) then
-            temp_p_l:= v.matrix(p,l);
+            temp_p_l:= v.matrix(p,i);
             temp_p_i:= v.matrix(i,i);
             --v.matrix(p, l)     := std_logic_vector(to_signed(to_integer(signed(M.matrix(p, l)))- to_integer(signed(M.matrix(i, l)))*to_integer(signed(M.matrix(p, i)))/to_integer(signed(M.matrix(i, i))), 32));
             v.matrix(p, l)     := std_logic_vector(to_signed(to_integer(signed(v.matrix(p,l)))- to_integer(signed(v.matrix(i, l)))*to_integer(signed(v.matrix(p, i)))/to_integer(signed(v.matrix(i, i))), 32));
@@ -64,6 +66,7 @@ begin
     if (reset ='1') then
        	v.matrix := (others=>(others=>(others=>'0')));
      	v.matrix_inv := (others=>(others=>(others=>'0')));
+    end if;
     end if;
     r_in <= v;
     M_forward_elimination.matrix <= r.matrix;
