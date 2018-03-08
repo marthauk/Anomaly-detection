@@ -41,7 +41,7 @@ begin
     end if;
 
     --if(M.state_reg.state = STATE_BACKWARD_ELIMINATION and not (v.state_reg.inner_loop_iter_finished = '1')) then
-    if(M.state_reg.state = STATE_BACKWARD_ELIMINATION ) then
+    if(M.state_reg.state = STATE_BACKWARD_ELIMINATION and not(M.state_reg.drive = STATE_BACKWARD_ELIMINATION_FINISHED) ) then
       if(M.state_reg.start_inner_loop = '1' and M.valid_matrix_data = '1') then
         -- Load matrix and set index_j
         v                                    := M;
@@ -59,13 +59,14 @@ begin
       end if;
 
       if(to_integer(signed(v.row_reg.elim_index_j)) >= 0) then
+      --if(to_integer(signed(v.row_reg.elim_index_j)) > 0 and to_integer(signed(r.row_reg.elim_index_j))>0) then
         if (v.row_reg.elim_index_j /= std_logic_vector(to_unsigned(0, 32)) and M.state_reg.fsm_start_signal /= START_BACKWARD_ELIMINATION and backward_elim_row.valid_data = '1') then
           -- Wait until we actually have registered in some matrix-value before
           -- altering the index.
           v.row_reg.elim_index_j := std_logic_vector(to_signed(to_integer(signed(r.row_reg.elim_index_j))-1, 32));
+          --v.row_reg.a_j_i := v.matrix(to_integer(unsigned(v.row_reg.elim_index_j)), to_integer(unsigned(v.row_reg.elim_index_i)));
         end if;
-        v.row_reg.a_j_i := v.matrix(to_integer(unsigned(v.row_reg.elim_index_j)), to_integer(unsigned(v.row_reg.elim_index_i)));
-        --v.row_reg.a_j_i := v.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), to_integer(unsigned(r.row_reg.elim_index_i)));
+        v.row_reg.a_j_i := v.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), to_integer(unsigned(r.row_reg.elim_index_i)));
         for p in 0 to P_BANDS-1 loop
           v.row_reg.row_j(0, p)     := v.matrix(to_integer(unsigned(v.row_reg.elim_index_j)), p);
           v.row_reg.row_i(0, p)     := v.matrix(to_integer(unsigned(v.row_reg.elim_index_i)), p);

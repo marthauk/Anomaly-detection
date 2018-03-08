@@ -51,12 +51,14 @@ package Common_types_and_functions is
   -- for correlation results
   type matrix_32 is array (natural range <>, natural range <>) of std_logic_vector(31 downto 0);
 
+  -- drive signals
   constant STATE_IDLE_DRIVE                        : std_logic_vector(2 downto 0) := "000";
   constant STATE_FORWARD_ELIM_TRIANGULAR_FINISHED  : std_logic_vector(2 downto 0) := "001";
   constant STATE_FORWARD_ELIMINATION_FINISHED      : std_logic_vector(2 downto 0) := "010";
   constant STATE_BACKWARD_ELIMINATION_FINISHED     : std_logic_vector(2 downto 0) := "011";
   constant STATE_IDENTITY_MATRIX_BUILDING_FINISHED : std_logic_vector(2 downto 0) := "111";
 
+  -- start signals for fsm
   constant IDLING                         : std_logic_vector(1 downto 0) := "00";
   constant START_FORWARD_ELIMINATION      : std_logic_vector(1 downto 0) := "01";
   constant START_BACKWARD_ELIMINATION     : std_logic_vector(1 downto 0) := "10";
@@ -72,15 +74,16 @@ package Common_types_and_functions is
   type state_type is (STATE_IDLE, STATE_FORWARD_ELIMINATION, STATE_BACKWARD_ELIMINATION, STATE_IDENTITY_MATRIX_BUILDING);
 
   type reg_state_type is record
-    state                         : state_type;
-    drive                         : std_logic_vector(2 downto 0);
-    fsm_start_signal              : std_logic_vector(1 downto 0);
-    inner_loop_iter_finished      : std_logic;
-    inner_loop_last_iter_finished : std_logic;
-    start_inner_loop              : std_logic;
-    start_inversion               : std_logic;
-    forward_elim_ctrl_signal      : std_logic_vector(1 downto 0);
-    forward_elim_state_signal     : std_logic_vector(1 downto 0);
+    state                           : state_type;
+    drive                           : std_logic_vector(2 downto 0);
+    fsm_start_signal                : std_logic_vector(1 downto 0);
+    inner_loop_iter_finished        : std_logic;
+    inner_loop_last_iter_finished   : std_logic;
+    start_inner_loop                : std_logic;
+    forward_elim_ctrl_signal        : std_logic_vector(1 downto 0);
+    forward_elim_state_signal       : std_logic_vector(1 downto 0);
+    flag_forward_core_started       : std_logic;
+    flag_forward_triangular_started : std_logic;
   end record;
 
   type row_reg_type is record
@@ -117,15 +120,16 @@ package Common_types_and_functions is
 
 
   constant C_STATE_REG_TYPE_INIT : reg_state_type := (
-    state                         => STATE_IDLE,
-    drive                         => STATE_IDLE_DRIVE,
-    fsm_start_signal              => IDLING,
-    inner_loop_iter_finished      => '0',
-    inner_loop_last_iter_finished => '0',
-    start_inner_loop              => '0',
-    start_inversion               => '0',
-    forward_elim_ctrl_signal      => IDLING,
-    forward_elim_state_signal     => IDLING
+    state                           => STATE_IDLE,
+    drive                           => STATE_IDLE_DRIVE,
+    fsm_start_signal                => IDLING,
+    inner_loop_iter_finished        => '0',
+    inner_loop_last_iter_finished   => '0',
+    start_inner_loop                => '0',
+    forward_elim_ctrl_signal        => IDLING,
+    forward_elim_state_signal       => IDLING,
+    flag_forward_core_started       => '0',
+    flag_forward_triangular_started => '0'
     );
 
   constant C_MATRIX_REG_TYPE_INIT : matrix_reg_type := (
@@ -165,7 +169,7 @@ package body Common_types_and_functions is
   end function;
 
   function create_identity_matrix(n : natural) return matrix_32 is
-    variable M_identity_matrix : matrix_32;
+    variable M_identity_matrix : matrix_32( 0 to P_BANDS-1, 0 to P_BANDS-1);
   begin
     M_identity_matrix := (others => (others => (others => '0')));
     for i in 0 to n-1 loop
