@@ -97,7 +97,7 @@ begin
 
 
 
-  comb : process(reset,r, M_corr, fsm_state_reg, M_last_division, M_forward_elim, M_backward_elim)  -- combinatorial process
+  comb : process(reset, r, M_corr, fsm_state_reg, M_last_division, M_forward_elim, M_backward_elim)  -- combinatorial process
     variable v : matrix_reg_type;
   begin
     v           := r;
@@ -132,12 +132,19 @@ begin
         v.matrix_inv := M_identity_matrix;
     end case;
     if(start_inversion = '1' or reset = '1') then
-      v.matrix     := M_corr.matrix;
-      v.matrix_inv := M_identity_matrix;
+      v.matrix            := M_corr.matrix;
+      v.matrix_inv        := M_identity_matrix;
+      v.valid_matrix_data := '1';
     end if;
-    r_in            <= v;
-    drive_input_fsm <= r.state_reg.drive;
-    M_inv           <= r;
+    r_in                             <= v;
+    drive_input_fsm                  <= r.state_reg.drive;
+    M_inv.state_reg.state            <= fsm_state_reg.state;
+    M_inv.state_reg.fsm_start_signal <= fsm_state_reg.fsm_start_signal;
+    M_inv.matrix_inv                 <= r.matrix_inv;
+    M_inv.matrix                     <= r.matrix;
+    M_inv.valid_matrix_data          <= r.valid_matrix_data;
+    M_inv.state_reg.drive            <= r.state_reg.drive;
+  -- M_inv <= r;
   end process;
 
 
