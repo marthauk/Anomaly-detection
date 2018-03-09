@@ -39,6 +39,7 @@ entity fsm_inverse_matrix is
         clk             : in    std_logic;
         clk_en          : in    std_logic;
         start_inversion : in    std_logic;
+        drive           : in    std_logic_vector(2 downto 0);
         state_reg       : inout reg_state_type);
 end fsm_inverse_matrix;
 
@@ -48,46 +49,38 @@ architecture Behavioral of fsm_inverse_matrix is
 
 begin
 
-  comb : process(r, reset, start_inversion)
+  comb : process(r, reset, start_inversion, drive)
     variable v : reg_state_type;
 
   begin
     v       := r;
-    v.drive := state_reg.drive;
+    v.drive := drive;
     case r.state is
       -- remember to assign all outputs to avoid latches
       when STATE_IDLE =>
         if(start_inversion = '1') then
-          v.state                       := STATE_FORWARD_ELIMINATION;
-          v.state_reg.fsm_start_signal := START_FORWARD_ELIMINATION;
-          --v.forward_elim_ctrl_signal    := START_FORWARD_ELIM_TRIANGULAR;
-          --v.forward_elim_state_signal   := STATE_FORWARD_TRIANGULAR;
+          v.state            := STATE_FORWARD_ELIMINATION;
+          v.fsm_start_signal := START_FORWARD_ELIMINATION;
         end if;
       when STATE_FORWARD_ELIMINATION =>
-        v.state_reg.fsm_start_signal := IDLING;
-        --if (r.forward_elim_ctrl_signal = START_FORWARD_TRIANGULAR) then
-        --  v.forward_elim_ctrl_signal := STATE_IDLE_DRIVE;
-        --elsif (r.forward_elim_ctrl_signal = START_FORWARD_ELIM_CORE) then
-        --  v.forward_elim_ctrl_signal := STATE_IDLE_DRIVE;
-        --end if;
-        --if (r.drive = STATE_FORWARD_ELIMINATION_TRIANGULAR_FINISHED) then
-        --  v.forward_elim_state_signal := STATE_FORWARD_ELIM;
-        --  v.forward_elim_ctrl_signal  := START_FORWARD_ELIM_CORE;
-        --end if;
-        if (r.drive = STATE_FORWARD_ELIMINATION_FINISHED) then
-          v.state := STATE_BACKWARD_ELIMINATION;
-          v.state_reg.fsm_start_signal := START_BACKWARD_ELIMINATION;
+        v.fsm_start_signal := IDLING;
+        --if (r.drive = STATE_FORWARD_ELIMINATION_FINISHED) then
+        if (v.drive = STATE_FORWARD_ELIMINATION_FINISHED) then
+          v.state            := STATE_BACKWARD_ELIMINATION;
+          v.fsm_start_signal := START_BACKWARD_ELIMINATION;
         end if;
       when STATE_BACKWARD_ELIMINATION =>
-          v.state_reg.fsm_start_signal := IDLING;
-        if(r.drive = STATE_BACKWARD_ELIMINATION_FINISHED) then
-          v.state := STATE_IDENTITY_MATRIX_BUILDING;
-          v.state_reg.fsm_start_signal := START_IDENTITY_MATRIX_BUILDING;
+        v.fsm_start_signal := IDLING;
+        --if(r.drive = STATE_BACKWARD_ELIMINATION_FINISHED) then
+        if(v.drive = STATE_BACKWARD_ELIMINATION_FINISHED) then
+          v.state            := STATE_IDENTITY_MATRIX_BUILDING;
+          v.fsm_start_signal := START_IDENTITY_MATRIX_BUILDING;
         end if;
       when STATE_IDENTITY_MATRIX_BUILDING =>
-        if(r.drive = STATE_IDENTITY_MATRIX_BUILDING_FINISHED) then
-          v.state := STATE_IDLE;
-          v.state_reg.fsm_start_signal := IDLING;
+        --if(r.drive = STATE_IDENTITY_MATRIX_BUILDING_FINISHED) then
+        if(v.drive = STATE_IDENTITY_MATRIX_BUILDING_FINISHED) then
+          v.state            := STATE_IDLE;
+          v.fsm_start_signal := IDLING;
         end if;
       when others =>
         v.drive := STATE_IDLE_DRIVE;

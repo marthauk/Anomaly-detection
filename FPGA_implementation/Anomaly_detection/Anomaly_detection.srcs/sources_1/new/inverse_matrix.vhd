@@ -97,15 +97,16 @@ begin
 
 
 
-  comb : process(reset, M_corr, fsm_state_reg, M_last_division, M_forward_elim, M_backward_elim)  -- combinatorial process
+  comb : process(reset,r, M_corr, fsm_state_reg, M_last_division, M_forward_elim, M_backward_elim)  -- combinatorial process
     variable v : matrix_reg_type;
   begin
     v           := r;
     v.state_reg := fsm_state_reg;
+    --v.state_reg.fsm_start_signal:= fsm_state_reg.fsm_start_signal;
     case v.state_reg.state is
       when STATE_IDLE =>
-        v.matrix            := M_corr.matrix;
-        v.matrix_inv        := M_identity_matrix;
+        --v.matrix            := M_corr.matrix;
+        --v.matrix_inv        := M_identity_matrix;
         v.valid_matrix_data := '1';
         v.state_reg.drive   := IDLING;
       -- need to wait until valid data on all
