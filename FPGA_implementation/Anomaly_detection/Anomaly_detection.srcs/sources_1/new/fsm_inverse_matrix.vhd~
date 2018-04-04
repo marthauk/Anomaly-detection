@@ -77,7 +77,7 @@ begin
           v.fsm_start_signal := START_IDENTITY_MATRIX_BUILDING;
         end if;
       when STATE_IDENTITY_MATRIX_BUILDING =>
-        --if(r.drive = STATE_IDENTITY_MATRIX_BUILDING_FINISHED) then
+        v.fsm_start_signal := IDLING;
         if(v.drive = STATE_IDENTITY_MATRIX_BUILDING_FINISHED) then
           v.state            := STATE_IDLE;
           v.fsm_start_signal := IDLING;

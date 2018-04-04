@@ -39,7 +39,7 @@ package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
   constant N_PIXELS : integer;
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS  : integer := 3;
+  constant P_BANDS  : integer := 4;
   -- K is size of the kernel used in LRX. 
   constant K        : integer;
   --constant pixel_data_size is std_logic_vector(11 downto 0);

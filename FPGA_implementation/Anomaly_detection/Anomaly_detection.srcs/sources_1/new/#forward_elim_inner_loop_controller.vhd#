@@ -1,4 +1,3 @@
-
 library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -22,11 +21,7 @@ begin
 
   comb_process : process(M, r, reset)
     variable v : matrix_reg_type;
-    variable r_j_i : integer range -1000 to 1000;
-    variable r_i_i : integer range -1000 to 1000;
-    variable test : integer;
-	variable inner_product : integer;
-	variable r_i_i_halv : integer;
+
   begin
     v                            := r;
     v.state_reg.start_inner_loop := M.state_reg.start_inner_loop;
@@ -44,23 +39,19 @@ begin
         v.row_reg.valid_data                 := '1';
         v.state_reg.inner_loop_iter_finished := '0';
       end if;
+      -- Have loaded
+      --    if(forward_elim_row.valid_data = '1') then
+      -- Received forward elim data-- update Matrix 
+      --      for p in 0 to P_BANDS-1 loop
+      --        v.matrix(to_integer(unsigned(forward_elim_row.elim_index_j)), p)     := forward_elim_row.row_j(0, p);
+      --        v.matrix_inv(to_integer(unsigned(forward_elim_row.elim_index_j)), p) := forward_elim_row.inv_row_j(0, p);
+      --      end loop;
+      --    end if;
 
       if(to_integer(signed(v.row_reg.elim_index_j)) <= P_BANDS-1 and r.row_reg.valid_data = '1') then
-      
-		  r_j_i := to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), to_integer(unsigned(r.row_reg.elim_index_i)))));
-		  r_i_i := to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_i)), to_integer(unsigned(r.row_reg.elim_index_i)))));
-		  --test := r_j_i/r_i_i + 1/2;
-		  r_i_i_halv :=r_i_i/2;
         for i in 0 to P_BANDS-1 loop
-          
-            inner_product:= to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_i)), i)))*r_j_i;
-            test:=(inner_product+r_i_i_halv);
-            test := test/r_i_i;
-              -- Remember order of mathematics! Do the multiplication first, then divide, then add 0.5
-        	v.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), i) :=std_logic_vector(to_signed(to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), i))-test),32));
-       		v.matrix_inv(to_integer(unsigned(r.row_reg.elim_index_j)), i) :=std_logic_vector(to_signed(to_integer(signed(r.matrix_inv(to_integer(unsigned(r.row_reg.elim_index_j)), i))-test),32));
-         --v.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), i)     := std_logic_vector(to_signed(to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), i))) -to_integer(signed(v.matrix(to_integer(unsigned(r.row_reg.elim_index_i)), i))) * to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), to_integer(unsigned(r.row_reg.elim_index_i)))))/to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_i)), to_integer(unsigned(r.row_reg.elim_index_i)))))+1/2, 32));
-         --v.matrix_inv(to_integer(unsigned(r.row_reg.elim_index_j)), i)     := std_logic_vector(to_signed(to_integer(signed(r.matrix_inv(to_integer(unsigned(r.row_reg.elim_index_j)), i))) -to_integer(signed(r.matrix_inv(to_integer(unsigned(r.row_reg.elim_index_i)), i))) * to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), to_integer(unsigned(r.row_reg.elim_index_i)))))/to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_i)), to_integer(unsigned(r.row_reg.elim_index_i)))))+1/2, 32));
+          v.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), i)     := std_logic_vector(to_signed(to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), i))) -to_integer(signed(v.matrix(to_integer(unsigned(r.row_reg.elim_index_i)), i))) * to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), to_integer(unsigned(r.row_reg.elim_index_i)))))/to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_i)), to_integer(unsigned(r.row_reg.elim_index_i))))), 32));
+          v.matrix_inv(to_integer(unsigned(r.row_reg.elim_index_j)), i)     := std_logic_vector(to_signed(to_integer(signed(r.matrix_inv(to_integer(unsigned(r.row_reg.elim_index_j)), i))) -to_integer(signed(r.matrix_inv(to_integer(unsigned(r.row_reg.elim_index_i)), i))) * to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_j)), to_integer(unsigned(r.row_reg.elim_index_i)))))/to_integer(signed(r.matrix(to_integer(unsigned(r.row_reg.elim_index_i)), to_integer(unsigned(r.row_reg.elim_index_i))))), 32));
         end loop;
         if (v.row_reg.elim_index_j < std_logic_vector(to_unsigned(P_BANDS-1, 32)) and M.state_reg.forward_elim_ctrl_signal /= START_FORWARD_ELIM_CORE) then
           -- Wait until we actually have registered in some matrix-value before

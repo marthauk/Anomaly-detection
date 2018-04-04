@@ -56,7 +56,6 @@ begin
     v       := r;
     v.drive := drive;
     case r.state is
-      -- remember to assign all outputs to avoid latches
       when STATE_IDLE =>
         if(start_inversion = '1') then
           v.state            := STATE_FORWARD_ELIMINATION;
@@ -64,14 +63,12 @@ begin
         end if;
       when STATE_FORWARD_ELIMINATION =>
         v.fsm_start_signal := IDLING;
-        --if (r.drive = STATE_FORWARD_ELIMINATION_FINISHED) then
         if (v.drive = STATE_FORWARD_ELIMINATION_FINISHED) then
           v.state            := STATE_BACKWARD_ELIMINATION;
           v.fsm_start_signal := START_BACKWARD_ELIMINATION;
         end if;
       when STATE_BACKWARD_ELIMINATION =>
         v.fsm_start_signal := IDLING;
-        --if(r.drive = STATE_BACKWARD_ELIMINATION_FINISHED) then
         if(v.drive = STATE_BACKWARD_ELIMINATION_FINISHED) then
           v.state            := STATE_IDENTITY_MATRIX_BUILDING;
           v.fsm_start_signal := START_IDENTITY_MATRIX_BUILDING;
