@@ -1,0 +1,80 @@
+-------------------------------------------------------------------------------
+-- Title      : Testbench for design "shiftregister_four_pixels"
+-- Project    : 
+-------------------------------------------------------------------------------
+-- File       : shiftregister_four_pixels_tb.vhd
+-- Author     :   <Martin@MARTIN-PC>
+-- Company    : 
+-- Created    : 2018-04-09
+-- Last update: 2018-04-09
+-- Platform   : 
+-- Standard   : VHDL'93/02
+-------------------------------------------------------------------------------
+-- Description: 
+-------------------------------------------------------------------------------
+-- Copyright (c) 2018 
+-------------------------------------------------------------------------------
+-- Revisions  :
+-- Date        Version  Author  Description
+-- 2018-04-09  1.0      Martin	Created
+-------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+-------------------------------------------------------------------------------
+
+entity shiftregister_four_pixels_tb is
+
+end entity shiftregister_four_pixels_tb;
+
+-------------------------------------------------------------------------------
+
+architecture Behavioral of shiftregister_four_pixels_tb is
+
+  -- component ports
+  signal din     : std_logic_vector (63 downto 0);
+  signal valid   : std_logic;
+  signal clk     : std_logic;
+  signal clk_en  : std_logic;
+  signal reset_n : std_logic;
+  signal dout    : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH -1 downto 0);
+
+  -- clock
+  signal Clk : std_logic := '1';
+
+begin  -- architecture Behavioral
+
+  -- component instantiation
+  DUT: entity work.shiftregister_four_pixels
+    port map (
+      din     => din,
+      valid   => valid,
+      clk     => clk,
+      clk_en  => clk_en,
+      reset_n => reset_n,
+      dout    => dout);
+
+  -- clock generation
+  Clk <= not Clk after 10 ns;
+
+  -- waveform generation
+  WaveGen_Proc: process
+  begin
+    -- insert signal assignments here
+
+    wait until Clk = '1';
+  end process WaveGen_Proc;
+
+  
+
+end architecture Behavioral;
+
+-------------------------------------------------------------------------------
+
+configuration shiftregister_four_pixels_tb_Behavioral_cfg of shiftregister_four_pixels_tb is
+  for Behavioral
+  end for;
+end shiftregister_four_pixels_tb_Behavioral_cfg;
+
+-------------------------------------------------------------------------------

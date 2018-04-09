@@ -1,0 +1,44 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library work;
+use work.Common_types_and_functions.all;
+
+-- Correlation module with AXI lite stream interface
+entity acad_correlation is
+  port(M_TDATA  : in  std_logic_vector (63 downto 0);  -- input pixel data from
+                                                       -- cube DMA
+       M_TVALID : in  std_logic;        -- handshake axi lite signal
+       S_TREADY : out std_logic;        -- handshake axi lite signal
+
+
+       );
+end acad_correlation;
+
+architecture Behavioral of acad_correlation is
+  signal r, r_in : std_logic_vector(63 downto 0);
+
+
+begin
+
+  comb_process : process(M_TDATA, M_TVALID)
+    variable v : std_logic_vector(63 downto 0);
+  begin
+    v := M_TDATA;
+    r_in <= v;
+    
+
+  end process;
+
+  
+  sequential_process : process(clk, clk_en)
+  begin
+    if(rising_edge(clk) and clk_en = '1') then
+      r <= r_in;
+    end if;
+  end process;
+
+
+
+end Behavioral;

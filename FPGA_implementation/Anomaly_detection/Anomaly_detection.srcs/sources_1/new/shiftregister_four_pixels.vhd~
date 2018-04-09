@@ -1,0 +1,50 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+library work;
+use work.Common_types_and_functions.all;
+
+-- A serial in parallell out shift register
+entity shiftregister_four_pixels is
+  port (din   : in    std_logic_vector (63 downto 0);
+        valid : in    std_logic;
+        clk   : in    std_logic;
+        reset : in    std_logic;
+        dout  : inout std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH -1 downto 0)
+        );
+end shiftregister_four_pixels;
+
+architecture Behavioral of shiftregister_four_pixels is
+  signal r, r_in : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH -1 downto 0);
+
+begin
+  comb_proc : process(din, valid, dout)
+    variable shift_counter : integer := 0;
+    variable temp_dout     : std_logic_vector(P_BANDS * PIXEL_DATA_WIDTH-1 downto 0);
+  begin
+    if(valid = '1')then
+      shift_counter                                                                                := shift_counter+1;
+      temp_dout                                                                                    := dout;
+      -- Shifting in 4 pixels at the time
+      temp_dout(P_BANDS*PIXEL_DATA_WITDH-1 - 4*PIXEL_DATA_WIDTH downto 0)                          := temp_dout(P_BANDS*PIXEL_DATA_WIDTH-1 downto 0);
+      temp_dout(P_BANDS*PIXEL_DATA_WIDTH-1 downto P_BANDS*PIXEL_DATA_WIDTH-1 - 4*PIXEL_DATA_WIDTH) := din;
+      r_in                                                                                         <= v;
+      dout                                                                                         <= r;
+    end if;
+    if(reset = '1') then
+      v    := (others => '0');
+      r_in <= v;
+      dout <= r;
+    end process;
+
+
+      sequential_proc : process(clk)
+      begin
+        if (rising_edge(clk)) then
+          r <= r_in;
+        end if;
+      end process;
+
+
+    end Behavioral;

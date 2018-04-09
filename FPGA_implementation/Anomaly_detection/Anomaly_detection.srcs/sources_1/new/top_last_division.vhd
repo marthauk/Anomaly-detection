@@ -21,6 +21,8 @@ begin
 
   comb_process : process(M, r, reset)
     variable v : matrix_reg_type;
+    variable test : std_logic_vector(31 downto 0);
+    variable v_i_i :  integer;
   begin
 
     v                            := r;
@@ -35,7 +37,10 @@ begin
 
       if(to_integer(signed(v.row_reg.elim_index_i)) <= P_BANDS-1 and v.row_reg.valid_data = '1') then
         for i in 0 to P_BANDS-1 loop
-          v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i) := std_logic_vector(to_signed(to_integer(signed(v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i))) * 1/to_integer(signed(v.matrix(to_integer(unsigned(v.row_reg.elim_index_i)), to_integer(unsigned(v.row_reg.elim_index_i))))), 32));
+
+        v_i_i:=to_integer(signed(v.matrix(to_integer(unsigned(v.row_reg.elim_index_i)), to_integer(unsigned(v.row_reg.elim_index_i)))));
+         --v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i) := std_logic_vector(to_signed((to_integer(signed(v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i)))+v_i_i/2) * 1/to_integer(signed(v.matrix(to_integer(unsigned(v.row_reg.elim_index_i)), to_integer(unsigned(v.row_reg.elim_index_i))))), 32));
+        v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i) := std_logic_vector(to_signed(to_integer(signed(v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i))) * 1/to_integer(signed(v.matrix(to_integer(unsigned(v.row_reg.elim_index_i)), to_integer(unsigned(v.row_reg.elim_index_i)))))+1/2, 32));
         end loop;
       end if;
       if( to_integer(signed(v.row_reg.elim_index_i)) >= P_BANDS-1) then

@@ -59,8 +59,7 @@ begin
       end if;
 
       if(to_integer(signed(v.row_reg.elim_index_j)) >= 0) then
-      --if(to_integer(signed(v.row_reg.elim_index_j)) > 0 and to_integer(signed(r.row_reg.elim_index_j))>0) then
-        if (v.row_reg.elim_index_j /= std_logic_vector(to_unsigned(0, 32)) and M.state_reg.fsm_start_signal /= START_BACKWARD_ELIMINATION and backward_elim_row.valid_data = '1') then
+        if (v.row_reg.elim_index_j /= std_logic_vector(to_unsigned(0, 32)) and M.state_reg.fsm_start_signal /= START_BACKWARD_ELIMINATION and backward_elim_row.valid_data = '1' and r.row_reg.elim_index_j > std_logic_vector(to_unsigned(0, 32))) then
           -- Wait until we actually have registered in some matrix-value before
           -- altering the index.
           v.row_reg.elim_index_j := std_logic_vector(to_signed(to_integer(signed(r.row_reg.elim_index_j))-1, 32));

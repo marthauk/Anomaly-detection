@@ -60,7 +60,6 @@ begin
                   clk => clk,
                   clk_en => clk_en
                   );
--- This is where the correlation actually happens
     p_correlate: process(clk,reset)
     variable count_signal_finish : integer:=0;
         begin

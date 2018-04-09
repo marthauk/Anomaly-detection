@@ -39,7 +39,7 @@ package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
   constant N_PIXELS : integer;
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS  : integer := 3;
+  constant P_BANDS  : integer := 4;
   -- K is size of the kernel used in LRX. 
   constant K        : integer;
   --constant pixel_data_size is std_logic_vector(11 downto 0);
@@ -80,7 +80,6 @@ package Common_types_and_functions is
     inner_loop_iter_finished        : std_logic;
     inner_loop_last_iter_finished   : std_logic;
     start_inner_loop                : std_logic;
-    start_inversion                 : std_logic;
     forward_elim_ctrl_signal        : std_logic_vector(1 downto 0);
     forward_elim_state_signal       : std_logic_vector(1 downto 0);
     flag_forward_core_started       : std_logic;
@@ -127,7 +126,6 @@ package Common_types_and_functions is
     inner_loop_iter_finished        => '0',
     inner_loop_last_iter_finished   => '0',
     start_inner_loop                => '0',
-    start_inversion                 => '0',
     forward_elim_ctrl_signal        => IDLING,
     forward_elim_state_signal       => IDLING,
     flag_forward_core_started       => '0',
@@ -171,7 +169,7 @@ package body Common_types_and_functions is
   end function;
 
   function create_identity_matrix(n : natural) return matrix_32 is
-    variable M_identity_matrix : matrix_32;
+    variable M_identity_matrix : matrix_32( 0 to P_BANDS-1, 0 to P_BANDS-1);
   begin
     M_identity_matrix := (others => (others => (others => '0')));
     for i in 0 to n-1 loop
