@@ -1,0 +1,1 @@
+-wto "0f219c07f77b4b478470af633b6a0277" --incr --debug "typical" --relax --mt "2" -L "xbip_utils_v3_0_8" -L "xbip_pipe_v3_0_4" -L "xbip_bram18k_v3_0_4" -L "mult_gen_v12_0_13" -L "xil_defaultlib" -L "secureip" -L "xpm" --snapshot "inverse_matrix_tb_behav" "xil_defaultlib.inverse_matrix_tb" -log "elaborate.log" 

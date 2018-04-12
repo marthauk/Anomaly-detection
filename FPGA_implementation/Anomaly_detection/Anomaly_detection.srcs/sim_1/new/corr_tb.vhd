@@ -106,6 +106,10 @@ begin
         M(1,0)<=std_logic_vector(to_unsigned(2,16));
         M(1,1)<=std_logic_vector(to_unsigned(3,16));
         M(1,2)<=std_logic_vector(to_unsigned(2,16));
+        M(2,0)<=std_logic_vector(to_unsigned(6,16));
+        M(2,1)<=std_logic_vector(to_unsigned(8,16));
+        M(2,2)<=std_logic_vector(to_unsigned(7,16));
+
 
            ready <= '1';
            --pixel_index <= pixel_index + std_logic_vector(to_unsigned(1,log2(N_PIXELS)));
