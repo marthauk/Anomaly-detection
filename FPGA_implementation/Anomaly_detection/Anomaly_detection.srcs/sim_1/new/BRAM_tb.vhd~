@@ -6,7 +6,7 @@
 -- Author     :   <Martin@MARTIN-PC>
 -- Company    : 
 -- Created    : 2018-04-05
--- Last update: 2018-04-05
+-- Last update: 2018-04-09
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -101,7 +101,10 @@ begin  -- architecture Behavioral
     variable int_rand                  : integer;  -- Random integer value in range 0..4095 
     variable stim                      : std_logic_vector(31 downto 0);  -- Random 32-bit stimulus
     variable int_address               : integer;
-    variable number_of_matrix_elements : integer := 1125;
+    variable number_of_matrix_elements : integer := 1125; -- 36 kBit block ram
+                                                          -- size, 32 bit per
+                                                          -- pixel/band. Matrix
+                                                          -- element in BRAM.
 
   begin
     -- Control signals

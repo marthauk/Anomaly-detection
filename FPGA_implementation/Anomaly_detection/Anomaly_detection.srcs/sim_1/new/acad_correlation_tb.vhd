@@ -6,7 +6,7 @@
 -- Author     :   <Martin@MARTIN-PC>
 -- Company    : 
 -- Created    : 2018-04-10
--- Last update: 2018-04-12
+-- Last update: 2018-04-13
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ architecture Behavioral of acad_correlation_tb is
   signal reset_n : std_logic;
   signal dout    : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2-1 downto 0);
   signal writes_done_on_row : std_logic_vector(log2(P_BANDS/2) downto 0);
-
+  signal write_state :std_logic;
   -- clock
   signal clk : std_logic := '1';
 
@@ -69,7 +69,8 @@ begin  -- architecture Behavioral
       clk_en  => clk_en,
       reset_n => reset_n,
       dout    => dout,
-      writes_done_on_row => writes_done_on_row
+      writes_done_on_row => writes_done_on_row,
+      write_state => write_state
       );
 
   -- clock generation
@@ -95,10 +96,21 @@ begin  -- architecture Behavioral
     reset_n <= '1';
     clk_en  <= '1';
     valid   <= '1';
-    wait for (P_BANDS/2 +1)*10ns + 30ns;  
+    wait for (P_BANDS)*10ns ;  
+    valid <='0';
+    for i in 0 to P_BANDS-1 loop
+      UNIFORM(seed1, seed2, rand);      -- generate random number 
+      int_rand                                                                                                                                        := integer(TRUNC(rand *256.0));  -- Convert to integer in range of 0 to 255
+      stim                                                                                                                                            := std_logic_vector(to_unsigned(int_rand, stim'length));  -- convert to                                                                   --std_logic_vector
+      din(P_BANDS*PIXEL_DATA_WIDTH - ((P_BANDS-i)*PIXEL_DATA_WIDTH)+ PIXEL_DATA_WIDTH-1 downto P_BANDS*PIXEL_DATA_WIDTH-(P_BANDS-i)*PIXEL_DATA_WIDTH) <= stim;
+      din(P_BANDS*PIXEL_DATA_WIDTH - ((P_BANDS-i)*PIXEL_DATA_WIDTH)+ PIXEL_DATA_WIDTH-1 downto P_BANDS*PIXEL_DATA_WIDTH-(P_BANDS-i)*PIXEL_DATA_WIDTH) <= stim;
+      wait for 10ns;
+    end loop;
+    valid<='1';
+    wait for (P_BANDS+1)*10ns;  
     -- Should be finished by now
-    clk_en  <= '0';
-    valid   <= '0';
+    --clk_en  <= '0';
+    --valid   <= '0';
     wait for 1000ns;
     -- insert signal assignments here
 

@@ -2,9 +2,9 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 01/29/2018 12:31:59 PM
+-- Create Date: 03/15/2018 04:38:11 PM
 -- Design Name: 
--- Module Name: common_types_and_functions - Behavioral
+-- Module Name: backward_elim_inner_loop_controller_new - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -20,11 +20,15 @@
 
 
 library IEEE;
+<<<<<<< HEAD:FPGA_implementation/Anomaly_detection/Anomaly_detection.srcs/sources_1/new/backward_elim_inner_loop_controller_new.vhd~
+use IEEE.STD_LOGIC_1164.ALL;
+=======
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.STD_LOGIC_ARITH.all;
 use ieee.numeric_std.all;
 
 library work;
+>>>>>>> FPGA_correlation_matrix:FPGA_implementation/Anomaly_detection/Anomaly_detection.srcs/sources_1/new/common_types_and_functions.vhd
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -35,11 +39,23 @@ library work;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
+<<<<<<< HEAD:FPGA_implementation/Anomaly_detection/Anomaly_detection.srcs/sources_1/new/backward_elim_inner_loop_controller_new.vhd~
+entity backward_elim_inner_loop_controller_new is
+--  Port ( );
+end backward_elim_inner_loop_controller_new;
+
+architecture Behavioral of backward_elim_inner_loop_controller_new is
+
+begin
+
+
+end Behavioral;
+=======
 package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
   constant N_PIXELS : integer;
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS  : integer range 0 to 100 := 4;
+  constant P_BANDS  : integer range 0 to 100 := 10;
   --constant P_BANDS : integer := 100;
   -- K is size of the kernel used in LRX. 
   constant K        : integer;
@@ -185,3 +201,4 @@ package body Common_types_and_functions is
 
 
 end Common_types_and_functions;
+>>>>>>> FPGA_correlation_matrix:FPGA_implementation/Anomaly_detection/Anomaly_detection.srcs/sources_1/new/common_types_and_functions.vhd
