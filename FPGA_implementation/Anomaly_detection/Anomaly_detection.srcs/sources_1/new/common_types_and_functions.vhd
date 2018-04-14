@@ -46,6 +46,9 @@ package Common_types_and_functions is
   constant PIXEL_DATA_WIDTH : integer :=16;
 
   constant BRAM_TDP_ADDRESS_WIDTH : integer range 0 to 10 := 10;
+  -- component generics
+  constant B_RAM_SIZE                          : integer                      := 100;
+  constant B_RAM_BIT_WIDTH                     : integer                      := 32;
   type matrix is array (natural range <>, natural range <>) of std_logic_vector(15 downto 0);
   -- for correlation results
   type matrix_32 is array (natural range <>, natural range <>) of std_logic_vector(31 downto 0);

@@ -69,9 +69,8 @@ begin  -- architecture Behavioral
       clk_en  => clk_en,
       reset_n => reset_n,
       dout    => dout,
-      writes_done_on_row => writes_done_on_row,
-      write_state => write_state
-      );
+      writes_done_on_row => writes_done_on_row
+            );
 
   -- clock generation
   clk <= not clk after 5 ns;
