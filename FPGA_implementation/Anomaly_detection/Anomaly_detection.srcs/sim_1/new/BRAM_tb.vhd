@@ -6,7 +6,7 @@
 -- Author     :   <Martin@MARTIN-PC>
 -- Company    : 
 -- Created    : 2018-04-05
--- Last update: 2018-04-09
+-- Last update: 2018-04-13
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -117,7 +117,8 @@ begin  -- architecture Behavioral
     WEA             <= "1111";
     WEB             <= "1111";
 
-    for i in 0 to (number_of_matrix_elements-1)/2 loop
+    --for i in 0 to (number_of_matrix_elements-1)/2 loop
+    for i in 0 to 5 loop
       UNIFORM(seed1, seed2, rand);      -- generate random number 
       int_rand    := integer(TRUNC(rand *256.0));  -- Convert to integer in range of 0 to 255
                                                    --, find integer part 
@@ -131,6 +132,21 @@ begin  -- architecture Behavioral
 
       wait for 10 ns;
     end loop;
+    for j in 0 to 5 loop
+      UNIFORM(seed1, seed2, rand);      -- generate random number 
+      int_rand    := integer(TRUNC(rand *256.0));  -- Convert to integer in range of 0 to 255
+                                                   --, find integer part 
+      stim        := std_logic_vector(to_unsigned(int_rand, stim'length));  -- convert to                                                                   --std_logic_vector
+      -- Address and data input
+      int_address := j*2;
+      DIA         <= stim;
+      DIB         <= stim;
+      ADDRA       <= std_logic_vector(to_unsigned(int_address, ADDRA'length));  -- convert to                                                                   --std_logic_vector
+      ADDRB       <= std_logic_vector(to_unsigned(int_address+1, ADDRA'length));  -- convert to                                                                   --std_logic_vector
+
+      wait for 10 ns;
+      end loop;
+      wait for 1000ns;
   end process WaveGen_Proc;
 
 

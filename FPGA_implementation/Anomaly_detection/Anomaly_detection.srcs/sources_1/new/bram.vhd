@@ -42,8 +42,8 @@ begin
       DEVICE        => "7SERIES",  --TargetDevice:"VIRTEX5","VIRTEX6","7SERIES","SPARTAN6"
       READ_WIDTH_A  => 32,  --Validvaluesare1-36(19-36onlyvalidwhenBRAM_SIZE="36Kb")
       READ_WIDTH_B  => 32,  --Validvaluesare1-36(19-36onlyvalidwhenBRAM_SIZE="36Kb"
-      WRITE_MODE_A  => "WRITE_FIRST",  -- WRITE FIRST", "READ_FIRST" or "NO_CHANGE
-      WRITE_MODE_B  => "WRITE_FIRST",  -- WRITE FIRST", "READ_FIRST" or "NO_CHANGE
+      WRITE_MODE_A  => "READ_FIRST",  -- WRITE FIRST", "READ_FIRST" or "NO_CHANGE
+      WRITE_MODE_B  => "READ_FIRST",  -- WRITE FIRST", "READ_FIRST" or "NO_CHANGE
       WRITE_WIDTH_A => 32,  --Validvaluesare1-36(19-36onlyvalidwhenBRAM_SIZE="36Kb")
       WRITE_WIDTH_B => 32)  --Validvaluesare1-36(19-36onlyvalidwhenBRAM_SIZE="36Kb"
     port map(

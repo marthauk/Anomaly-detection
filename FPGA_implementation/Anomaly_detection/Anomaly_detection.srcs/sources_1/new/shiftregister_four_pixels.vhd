@@ -6,6 +6,7 @@ library work;
 use work.Common_types_and_functions.all;
 
 -- A serial(n bit at a time) in parallell out shift register
+-- Inputes four bands at a time, until a whole pixel is shifted in
 entity shiftregister_four_pixels is
   port (din           : in    std_logic_vector (63 downto 0);
         valid         : in    std_logic;
