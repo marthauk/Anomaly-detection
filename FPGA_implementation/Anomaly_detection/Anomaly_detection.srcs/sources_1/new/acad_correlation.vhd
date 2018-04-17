@@ -54,7 +54,7 @@ begin
 
 
   gen_BRAM_18_updates : for i in 0 to P_BANDS-1 generate
-    -- Generating N_BRAMS = P_BANDS BRAMS.
+    -- Generating N_BRAMS = P_BANDS BRAM 36 kbits.
     signal data_in_even_i, data_in_odd_i, data_out_even_i, data_out_odd_i : std_logic_vector(B_RAM_BIT_WIDTH -1 downto 0);
 --value read from BRAM (odd index) before writing to address
   begin

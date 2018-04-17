@@ -37,18 +37,20 @@ library work;
 
 package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
-  constant N_PIXELS : integer;
+  constant N_PIXELS         : integer range 0 to 628864 := 628864;  -- 578 pixels per row * 1088 rows
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS  : integer range 0 to 100 := 6;
+  constant P_BANDS          : integer range 0 to 100    := 4;
   --constant P_BANDS : integer := 100;
   -- K is size of the kernel used in LRX. 
-  constant K        : integer;
-  constant PIXEL_DATA_WIDTH : integer :=16;
+  constant K                : integer;
+  constant PIXEL_DATA_WIDTH : integer                   := 16;
 
   constant BRAM_TDP_ADDRESS_WIDTH : integer range 0 to 10 := 10;
   -- component generics
-  constant B_RAM_SIZE                          : integer                      := 100;
-  constant B_RAM_BIT_WIDTH                     : integer                      := 32;
+  constant B_RAM_SIZE             : integer               := 100;
+-- Need to be 33 bit due to updating of two 32 bit variables. Is 33 bit necessary? Precision  question.
+  constant B_RAM_BIT_WIDTH        : integer               := 32;
+
   type matrix is array (natural range <>, natural range <>) of std_logic_vector(15 downto 0);
   -- for correlation results
   type matrix_32 is array (natural range <>, natural range <>) of std_logic_vector(31 downto 0);
@@ -73,7 +75,7 @@ package Common_types_and_functions is
   constant STATE_FORWARD_TRIANGULAR      : std_logic_vector(1 downto 0)  := "10";
   constant STATE_FORWARD_ELIM            : std_logic_vector(1 downto 0)  := "11";
 
-  type state_type is (STATE_IDLE, STATE_FORWARD_ELIMINATION, STATE_BACKWARD_ELIMINATION, STATE_IDENTITY_MATRIX_BUILDING);
+  type state_type is (STATE_IDLE, STATE_STORE_CORRELATION_MATRIX, STATE_FORWARD_ELIMINATION, STATE_BACKWARD_ELIMINATION, STATE_IDENTITY_MATRIX_BUILDING);
 
   type reg_state_type is record
     state                           : state_type;
@@ -150,7 +152,6 @@ end Common_types_and_functions;
 
 package body Common_types_and_functions is
   -- Found in SmallSat project description:
-  --constant N_PIXELS : integer := 2578;
   --constant P_BANDS :  integer := 100;
   constant N_PIXELS : integer := 3;
   --constant P_BANDS :  integer := 3;
@@ -171,7 +172,7 @@ package body Common_types_and_functions is
   end function;
 
   function create_identity_matrix(n : natural) return matrix_32 is
-    variable M_identity_matrix : matrix_32( 0 to P_BANDS-1, 0 to P_BANDS-1);
+    variable M_identity_matrix : matrix_32(0 to P_BANDS-1, 0 to P_BANDS-1);
   begin
     M_identity_matrix := (others => (others => (others => '0')));
     for i in 0 to n-1 loop

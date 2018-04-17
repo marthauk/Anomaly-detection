@@ -45,12 +45,15 @@ use work.Common_types_and_functions.all;
 -- It uses the two-step method, as described by Jiri Gaisler, with one modification;
 -- added initialization process
 entity inverse_matrix is
-  port (reset           : in    std_logic;
-        clk_en          : in    std_logic;
-        clk             : in    std_logic;
-        start_inversion : in    std_logic;
-        M_corr          : in    matrix_reg_type;
-        M_inv           : inout matrix_reg_type);
+  port (reset                    : in    std_logic;
+        clk_en                   : in    std_logic;
+        clk                      : in    std_logic;
+        valid                    : in    std_logic;
+        din                      : in    std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+        shifted_in_pixel_counter : in    std_logic_vector(log2(N_PIXELS) downto 0);
+        writes_done_on_row       : in    std_logic_vector(log2(P_BANDS/2) downto 0);
+        M_corr                   : in    matrix_reg_type;
+        M_inv                    : inout matrix_reg_type);
 end inverse_matrix;
 
 architecture Behavioral of inverse_matrix is
@@ -61,6 +64,53 @@ architecture Behavioral of inverse_matrix is
   signal drive_input_fsm                                           : std_logic_vector(2 downto 0);
 
 begin
+
+  gen_BRAM_18_for_storing_correlation_matrix : for i in 0 to P_BANDS-1 generate
+    -- Generating N_BRAMS = P_BANDS BRAM 36 kbits.
+    signal data_in_even_i, data_in_odd_i, data_out_even_i, data_out_odd_i : std_logic_vector(B_RAM_BIT_WIDTH -1 downto 0);
+    signal write_i, read_i                                                : integer range 0 to B_RAM_SIZE -1;
+--value read from BRAM (odd index) before writing to address
+  begin
+    -- Block ram row for even addresses and row indexes of the correlation matrix
+    block_ram_even : entity work.block_ram
+      generic map (
+        B_RAM_SIZE      => B_RAM_SIZE,
+        B_RAM_BIT_WIDTH => B_RAM_BIT_WIDTH)
+      port map (
+        clk           => clk,
+        aresetn       => reset_n,
+        data_in       => data_in_even_i,
+        write_enable  => write_enable,
+        read_enable   => read_enable,
+        read_address  => read_address,
+        write_address => write_address,
+        data_out      => data_out_even_i);
+    -- Block ram row for odd addresses and row indexes of the correlation matrix
+    block_ram_odd : entity work.block_ram
+      generic map (
+        B_RAM_SIZE      => B_RAM_SIZE,
+        B_RAM_BIT_WIDTH => B_RAM_BIT_WIDTH)
+      port map (
+        clk           => clk,
+        aresetn       => reset_n,
+        data_in       => data_in_odd_i,
+        write_enable  => write_enable,
+        read_enable   => read_enable,
+        write_address => write_address,
+        data_out      => data_out_odd_i);
+
+    -- Process to control address and data input to BRAMs.
+    process(clk, clk_en, valid, reset, writes_done_on_row, din)
+
+    begin
+      if rising_edge(clk) and clk_en = '1' then
+        if reset = '1' then
+
+        elsif valid = '1' and to_integer(unsigned(writes_done_on_row)) <= P_BANDS/2 then
+        end if;
+      end if;
+    end process;
+  end generate;
 
   top_forward_elimination_1 : entity work.top_forward_elimination
     port map (
@@ -89,16 +139,16 @@ begin
 
   fsm_inverse_matrix_1 : entity work.fsm_inverse_matrix
     port map (
-      reset           => reset,
-      clk             => clk,
-      clk_en          => clk_en,
-      start_inversion => start_inversion,
-      drive           => drive_input_fsm,
-      state_reg       => fsm_state_reg);
+      reset     => reset,
+      clk       => clk,
+      clk_en    => clk_en,
+      valid     => valid,
+      drive     => drive_input_fsm,
+      state_reg => fsm_state_reg);
 
 
 
-  comb : process(reset,start_inversion, r, M_corr, fsm_state_reg, M_last_division, M_forward_elim, M_backward_elim)  -- combinatorial process
+  comb : process(reset, start_inversion, r, M_corr, fsm_state_reg, M_last_division, M_forward_elim, M_backward_elim)  -- combinatorial process
     variable v : matrix_reg_type;
   begin
     v           := r;

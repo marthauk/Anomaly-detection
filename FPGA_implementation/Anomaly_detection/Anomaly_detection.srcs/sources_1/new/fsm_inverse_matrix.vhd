@@ -35,12 +35,13 @@ use work.Common_types_and_functions.all;
 --use UNISIM.VComponents.all;
 
 entity fsm_inverse_matrix is
-  port (reset           : in    std_logic;
-        clk             : in    std_logic;
-        clk_en          : in    std_logic;
-        start_inversion : in    std_logic;
-        drive           : in    std_logic_vector(2 downto 0);
-        state_reg       : inout reg_state_type);
+  port (reset             : in    std_logic;
+        clk               : in    std_logic;
+        clk_en            : in    std_logic;
+        valid             : in    std_logic;
+        write_done_on_row : in    std_logic_vector(log2(P_BANDS/2) downto 0);
+        drive             : in    std_logic_vector(2 downto 0);
+        state_reg         : inout reg_state_type);
 end fsm_inverse_matrix;
 
 architecture Behavioral of fsm_inverse_matrix is
@@ -49,7 +50,7 @@ architecture Behavioral of fsm_inverse_matrix is
 
 begin
 
-  comb : process(r, reset, start_inversion, drive)
+  comb : process(r, reset, valid, drive)
     variable v : reg_state_type;
 
   begin
@@ -57,9 +58,19 @@ begin
     v.drive := drive;
     case r.state is
       when STATE_IDLE =>
-        if(start_inversion = '1') then
+        if(valid = '1') then
+          v.state := STATE_STORE_CORRELATION_MATRIX;
+        end if;
+      when STATE_STORE_CORRELATION_MATRIX =>
+        if to_integer(unsigned(write_done_on_row)) = P_BANDS/2-1 then
+          -- Need to wait until the entire correlation matrix have been stored
+          -- in BRAM before starting to edit it.
           v.state            := STATE_FORWARD_ELIMINATION;
           v.fsm_start_signal := START_FORWARD_ELIMINATION;
+        end if;
+        if valid = '0' then
+          v.state := STATE_IDLE;
+          v.drive := STATE_IDLE_DRIVE;
         end if;
       when STATE_FORWARD_ELIMINATION =>
         v.fsm_start_signal := IDLING;

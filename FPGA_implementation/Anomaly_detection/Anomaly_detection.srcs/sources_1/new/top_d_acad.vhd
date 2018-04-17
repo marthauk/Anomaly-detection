@@ -16,13 +16,13 @@ entity top_d_acad is
        clk : in std_logic;
        clk_en : in std_logic;
        reset_n : in std_logic;
-       S_TREADY : out std_logic;        -- handshake axi lite signal
+       S_TREADY : out std_logic        -- handshake axi lite signal
     );
 end top_d_acad;
 
 
 architecture Behavioral of top_d_acad is
-
+signal shift_counter
 
 begin
   -- Shiftregister for shifting in data from cube DMA.
