@@ -16,6 +16,7 @@ entity acad_correlation is
        reset_n            : in    std_logic;
        dout               : inout std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto
                                      0);  -- writing two 32-bit elements per cycle
+       valid_out : out std_logic;
        writes_done_on_row : out   std_logic_vector(log2(P_BANDS/2) downto 0)
        );
 end acad_correlation;
@@ -223,6 +224,9 @@ begin
         -- New pixel coming on data_in input
         -- Assuming consequent pixels are hold valid, starting working on
         -- next pixel next cycle;
+        if(flag_first_pixel ='0') then
+        	valid_out<='1'; -- data outputted from correlation module will always "lag" one pixel
+        	end if;
         r_write_address      <= 0;
         r_read_address       <= 0;
         read_address         <= 0;

@@ -1,0 +1,83 @@
+-------------------------------------------------------------------------------
+-- Title      : Testbench for design "inverse_matrix"
+-- Project    : 
+-------------------------------------------------------------------------------
+-- File       : inverse_matrix_tb.vhd
+-- Author     :   <Martin@MARTIN-PC>
+-- Company    : 
+-- Created    : 2018-04-20
+-- Last update: 2018-04-20
+-- Platform   : 
+-- Standard   : VHDL'93/02
+-------------------------------------------------------------------------------
+-- Description: 
+-------------------------------------------------------------------------------
+-- Copyright (c) 2018 
+-------------------------------------------------------------------------------
+-- Revisions  :
+-- Date        Version  Author  Description
+-- 2018-04-20  1.0      Martin	Created
+-------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+-------------------------------------------------------------------------------
+
+entity inverse_matrix_tb is
+
+end entity inverse_matrix_tb;
+
+-------------------------------------------------------------------------------
+
+architecture Behavioral of inverse_matrix_tb is
+
+  -- component ports
+  signal reset_n               : std_logic;
+  signal clk_en                : std_logic;
+  signal clk                   : std_logic;
+  signal valid                 : std_logic;
+  signal din                   : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+  signal writes_done_on_column : std_logic_vector(log2(P_BANDS/2) downto
+                                                     0);
+  signal inverse_rows          : signed(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+
+  -- clock
+  signal Clk : std_logic := '1';
+
+begin  -- architecture Behavioral
+
+  -- component instantiation
+  DUT: entity work.inverse_matrix
+    port map (
+      reset_n               => reset_n,
+      clk_en                => clk_en,
+      clk                   => clk,
+      valid                 => valid,
+      din                   => din,
+      writes_done_on_column => writes_done_on_column,
+      inverse_rows          => inverse_rows);
+
+  -- clock generation
+  Clk <= not Clk after 10 ns;
+
+  -- waveform generation
+  WaveGen_Proc: process
+  begin
+    -- insert signal assignments here
+
+    wait until Clk = '1';
+  end process WaveGen_Proc;
+
+  
+
+end architecture Behavioral;
+
+-------------------------------------------------------------------------------
+
+configuration inverse_matrix_tb_Behavioral_cfg of inverse_matrix_tb is
+  for Behavioral
+  end for;
+end inverse_matrix_tb_Behavioral_cfg;
+
+-------------------------------------------------------------------------------

@@ -7,15 +7,15 @@ use ieee.numeric_std.all;
 library work;
 use work.Common_types_and_functions.all;
 
-entity forward_elim_inner_loop_controller is
+entity backward_elim_core is
   port(clk                 : in  std_logic;
        reset_n             : in  std_logic;
        clk_en              : in  std_logic;
        input_forward_elim  : in  input_elimination_reg_type;
        output_forward_elim : out output_forward_elimination_reg_type);
-end forward_elim_inner_loop_controller;
+end backward_elim_core;
 
-architecture Behavioral of forward_elim_inner_loop_controller is
+architecture Behavioral of backward_elim_core is
 
   signal r, r_in : input_elimination_reg_type;
 
@@ -25,7 +25,7 @@ begin
     variable v             : input_elimination_reg_type;
     variable r_j_i         : integer;
     variable r_i_i         : integer;
-    variable temp          : integer;
+    variable test          : integer;
     variable inner_product : integer;
     variable r_i_i_halv    : integer;
   ---
@@ -46,18 +46,17 @@ begin
 
         r_j_i      := to_integer(input_forward_elim.row_j(input_forward_elim.index_i));
         r_i_i      := to_integer(input_forward_elim.row_i(input_forward_elim.index_i));
-        r_i_i_halv := to_integer(shift_right(to_signed(r_i_i,32),1));-- dividing
-                                                                  -- by two.
+        r_i_i_halv := r_i_i/2;
         for i in 0 to P_BANDS-1 loop
           inner_product := to_integer(input_forward_elim.row_i(i))*r_j_i;
-          temp          := (inner_product+r_i_i_halv);
-          temp          := temp/r_i_i;
-          v.row_j(i)    := to_signed(to_integer(signed(input_forward_elim.row_j(i)))-temp, 32);
+          test          := (inner_product+r_i_i_halv);
+          test          := test/r_i_i;
+          v.row_j(i)    := to_signed(to_integer(signed(input_forward_elim.row_j(i)))-test, 32);
 
           inner_product  := to_integer(input_forward_elim.inv_row_i(i))*r_j_i;
-          temp           := (inner_product+r_i_i_halv);
-          temp           := temp/r_i_i;
-          v.inv_row_j(i) := to_signed(to_integer(input_forward_elim.inv_row_j(i))-temp, 32);
+          test           := (inner_product+r_i_i_halv);
+          test           := test/r_i_i;
+          v.inv_row_j(i) := to_signed(to_integer(input_forward_elim.inv_row_j(i))-test, 32);
 
         end loop;
       end if;
@@ -65,6 +64,8 @@ begin
     if(reset_n = '0') then
       v.index_i                                 := 0;
       v.index_j                                 := 1;
+      v.state_reg.inner_loop_iter_finished      := '0';
+      v.state_reg.inner_loop_last_iter_finished := '0';
     end if;
     r_in                              <= v;
     output_forward_elim.new_row_j     <= r.row_j;

@@ -21,7 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
-use IEEE.STD_LOGIC_ARITH.all;
+--use IEEE.STD_LOGIC_ARITH.all;
 use ieee.numeric_std.all;
 
 library work;
@@ -37,23 +37,28 @@ library work;
 
 package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
-  constant N_PIXELS         : integer range 0 to 628864 := 628864;  -- 578 pixels per row * 1088 rows
+  constant N_PIXELS                   : integer range 0 to 628864 := 628864;  -- 578 pixels per row * 1088 rows
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS          : integer range 0 to 100    := 4;
+  constant P_BANDS                    : integer range 0 to 100    := 4;
   --constant P_BANDS : integer := 100;
   -- K is size of the kernel used in LRX. 
-  constant K                : integer;
-  constant PIXEL_DATA_WIDTH : integer                   := 16;
-
-  constant BRAM_TDP_ADDRESS_WIDTH : integer range 0 to 10 := 10;
+  constant K                          : integer;
+  constant PIXEL_DATA_WIDTH           : integer                   := 16;
+  constant NUMBER_OF_WRITES_PER_CYCLE : integer range 0 to 2      := 2;  -- NUMBER of
+                                        -- writes to
+                                        -- BRAM per
+                                        -- cycle
+  constant BRAM_TDP_ADDRESS_WIDTH     : integer range 0 to 10     := 10;
   -- component generics
-  constant B_RAM_SIZE             : integer               := 100;
+  constant B_RAM_SIZE                 : integer                   := 100;
 -- Need to be 33 bit due to updating of two 32 bit variables. Is 33 bit necessary? Precision  question.
-  constant B_RAM_BIT_WIDTH        : integer               := 32;
+  constant B_RAM_BIT_WIDTH            : integer                   := 32;
 
   type matrix is array (natural range <>, natural range <>) of std_logic_vector(15 downto 0);
   -- for correlation results
   type matrix_32 is array (natural range <>, natural range <>) of std_logic_vector(31 downto 0);
+
+  type row_array is array (0 to P_BANDS-1) of signed(PIXEL_DATA_WIDTH*2 -1 downto 0);
 
   -- drive signals
   constant STATE_IDLE_DRIVE                        : std_logic_vector(2 downto 0) := "000";
@@ -110,6 +115,67 @@ package Common_types_and_functions is
     state_reg         : reg_state_type;
   end record;
 
+  type input_elimination_reg_type is record
+    row_j         : row_array;
+    row_i         : row_array;
+    inv_row_j     : row_array;
+    inv_row_i     : row_array;
+    state_reg     : reg_state_type;
+    index_i       : integer range 0 to B_RAM_SIZE -1;
+    index_j       : integer range 0 to B_RAM_SIZE -1;
+    valid_data    : std_logic;
+    write_address : integer range 0 to B_RAM_SIZE-1;
+    read_address  : integer range 0 to B_RAM_SIZE-1;
+  end record;
+  type inverse_top_level_reg_type is record
+    row_j                 : row_array;
+    row_i                 : row_array;
+    inv_row_j             : row_array;
+    inv_row_i             : row_array;
+    state_reg             : reg_state_type;
+    index_i               : integer range 0 to B_RAM_SIZE -1;
+    index_j               : integer range 0 to B_RAM_SIZE -1;
+    valid_data            : std_logic;
+    write_address         : integer range 0 to B_RAM_SIZE-1;
+    read_address          : integer range 0 to B_RAM_SIZE-1;
+    bram_write_data_M     : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+    bram_write_data_M_inv : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+    write_enable          : std_logic;
+    read_enable           : std_logic;
+  end record;
+
+  type output_forward_elimination_reg_type is record
+    new_row_j     : row_array;
+    new_row_i     : row_array;
+    new_inv_row_j : row_array;
+    state_reg     : reg_state_type;
+    r_addr_next   : integer range 0 to B_RAM_SIZE-1;
+    wr_addr_new   : integer range 0 to B_RAM_SIZE-1;
+    valid_data    : std_logic;
+  end record;
+
+  type output_backward_elimination_reg_type is record
+    new_row_j     : row_array;
+    new_inv_row_j : row_array;
+    r_addr_next   : integer range 0 to B_RAM_SIZE-1;
+    wr_addr_new   : integer range 0 to B_RAM_SIZE-1;
+    valid_data    : std_logic;
+    state_reg     : reg_state_type;
+  end record;
+
+  type input_last_division_reg_type is record
+    row_i     : row_array;
+    inv_row_i : row_array;
+    state_reg : reg_state_type;
+  end record;
+
+  type output_last_division_reg_type is record
+    new_inv_row_i : row_array;
+    r_addr_next   : integer range 0 to B_RAM_SIZE-1;
+    wr_addr_new   : integer range 0 to B_RAM_SIZE-1;
+    state_reg     : reg_state_type;
+  end record;
+
   constant C_ROW_REG_TYPE_INIT : row_reg_type := (
     row_j        => (others => (others => (others => '0'))),
     row_i        => (others => (others => (others => '0'))),
@@ -153,8 +219,6 @@ end Common_types_and_functions;
 package body Common_types_and_functions is
   -- Found in SmallSat project description:
   --constant P_BANDS :  integer := 100;
-  constant N_PIXELS : integer := 3;
-  --constant P_BANDS :  integer := 3;
 
   constant K : integer := 0;
 

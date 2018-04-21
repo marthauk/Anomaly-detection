@@ -1,0 +1,78 @@
+-------------------------------------------------------------------------------
+-- Title      : Testbench for design "backward_elim_core"
+-- Project    : 
+-------------------------------------------------------------------------------
+-- File       : backward_elim_core_tb.vhd
+-- Author     :   <Martin@MARTIN-PC>
+-- Company    : 
+-- Created    : 2018-04-20
+-- Last update: 2018-04-20
+-- Platform   : 
+-- Standard   : VHDL'93/02
+-------------------------------------------------------------------------------
+-- Description: 
+-------------------------------------------------------------------------------
+-- Copyright (c) 2018 
+-------------------------------------------------------------------------------
+-- Revisions  :
+-- Date        Version  Author  Description
+-- 2018-04-20  1.0      Martin	Created
+-------------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+-------------------------------------------------------------------------------
+
+entity backward_elim_core_tb is
+
+end entity backward_elim_core_tb;
+
+-------------------------------------------------------------------------------
+
+architecture Behavioral of backward_elim_core_tb is
+
+  -- component ports
+  signal clk                  : std_logic;
+  signal reset_n              : std_logic;
+  signal clk_en               : std_logic;
+  signal input_backward_elim  : input_elimination_reg_type;
+  signal output_backward_elim : output_backward_elimination_reg_type;
+
+  -- clock
+  signal Clk : std_logic := '1';
+
+begin  -- architecture Behavioral
+
+  -- component instantiation
+  DUT: entity work.backward_elim_core
+    port map (
+      clk                  => clk,
+      reset_n              => reset_n,
+      clk_en               => clk_en,
+      input_backward_elim  => input_backward_elim,
+      output_backward_elim => output_backward_elim);
+
+  -- clock generation
+  Clk <= not Clk after 10 ns;
+
+  -- waveform generation
+  WaveGen_Proc: process
+  begin
+    -- insert signal assignments here
+
+    wait until Clk = '1';
+  end process WaveGen_Proc;
+
+  
+
+end architecture Behavioral;
+
+-------------------------------------------------------------------------------
+
+configuration backward_elim_core_tb_Behavioral_cfg of backward_elim_core_tb is
+  for Behavioral
+  end for;
+end backward_elim_core_tb_Behavioral_cfg;
+
+-------------------------------------------------------------------------------
