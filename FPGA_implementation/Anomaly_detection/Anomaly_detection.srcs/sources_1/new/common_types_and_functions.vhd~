@@ -21,7 +21,7 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
-use IEEE.STD_LOGIC_ARITH.all;
+--use IEEE.STD_LOGIC_ARITH.all;
 use ieee.numeric_std.all;
 
 library work;
@@ -37,19 +37,22 @@ library work;
 
 package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
-  constant N_PIXELS         : integer range 0 to 628864 := 628864;  -- 578 pixels per row * 1088 rows
+  constant N_PIXELS                   : integer range 0 to 628864 := 628864;  -- 578 pixels per row * 1088 rows
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS          : integer range 0 to 100    := 20;
+  constant P_BANDS                    : integer range 0 to 100    := 4;
   --constant P_BANDS : integer := 100;
   -- K is size of the kernel used in LRX. 
-  constant K                : integer;
-  constant PIXEL_DATA_WIDTH : integer                   := 16;
-
-  constant BRAM_TDP_ADDRESS_WIDTH : integer range 0 to 10 := 10;
+  constant K                          : integer;
+  constant PIXEL_DATA_WIDTH           : integer                   := 16;
+  constant NUMBER_OF_WRITES_PER_CYCLE : integer range 0 to 2      := 2;  -- NUMBER of
+                                        -- writes to
+                                        -- BRAM per
+                                        -- cycle
+  constant BRAM_TDP_ADDRESS_WIDTH     : integer range 0 to 10     := 10;
   -- component generics
-  constant B_RAM_SIZE             : integer               := 100;
+  constant B_RAM_SIZE                 : integer                   := 100;
 -- Need to be 33 bit due to updating of two 32 bit variables. Is 33 bit necessary? Precision  question.
-  constant B_RAM_BIT_WIDTH        : integer               := 32;
+  constant B_RAM_BIT_WIDTH            : integer                   := 32;
 
   type matrix is array (natural range <>, natural range <>) of std_logic_vector(15 downto 0);
   -- for correlation results
@@ -145,6 +148,7 @@ package Common_types_and_functions is
     new_row_j     : row_array;
     new_row_i     : row_array;
     new_inv_row_j : row_array;
+    state_reg     : reg_state_type;
     r_addr_next   : integer range 0 to B_RAM_SIZE-1;
     wr_addr_new   : integer range 0 to B_RAM_SIZE-1;
     valid_data    : std_logic;
@@ -156,6 +160,7 @@ package Common_types_and_functions is
     r_addr_next   : integer range 0 to B_RAM_SIZE-1;
     wr_addr_new   : integer range 0 to B_RAM_SIZE-1;
     valid_data    : std_logic;
+    state_reg     : reg_state_type;
   end record;
 
   type input_last_division_reg_type is record
@@ -168,6 +173,7 @@ package Common_types_and_functions is
     new_inv_row_i : row_array;
     r_addr_next   : integer range 0 to B_RAM_SIZE-1;
     wr_addr_new   : integer range 0 to B_RAM_SIZE-1;
+    state_reg     : reg_state_type;
   end record;
 
   constant C_ROW_REG_TYPE_INIT : row_reg_type := (

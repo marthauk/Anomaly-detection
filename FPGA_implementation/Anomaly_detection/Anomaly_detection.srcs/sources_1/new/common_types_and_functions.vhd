@@ -142,6 +142,11 @@ package Common_types_and_functions is
     bram_write_data_M_inv : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
     write_enable          : std_logic;
     read_enable           : std_logic;
+    writes_done_on_column : std_logic_vector(1 downto 0);--should
+                                                                       --be
+                                                                       --size
+                                                                       --log2(P_BANDS/2)
+                                                                       --downto 0
   end record;
 
   type output_forward_elimination_reg_type is record

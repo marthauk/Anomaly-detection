@@ -231,31 +231,35 @@ begin
         v.read_enable  := '0';
         v.write_enable := '0';
         if(valid = '1') then
-          v.state_reg.state                                                                             := STATE_STORE_CORRELATION_MATRIX;
+          v.state_reg.state                                                                                                            := STATE_STORE_CORRELATION_MATRIX;
                                         -- Set write address to BRAMS
-          v.write_address                                                                               := 0;
-          v.read_address                                                                                := 0;
-          v.write_enable                                                                                := '1';
-          v.read_enable                                                                                 := '1';
-          v.bram_write_data_M                                                                           := din;
-          v.bram_write_data_M_inv                                                                       := (others => '0');
-          v.bram_write_data_M_inv                                                                       := (others => '0');
-          v.bram_write_data_M_inv((to_integer(unsigned(writes_done_on_column))*2)*PIXEL_DATA_WIDTH*2)   := '1';  -- creating the identity matrix
-          v.bram_write_data_M_inv((to_integer(unsigned(writes_done_on_column))*2+1)*PIXEL_DATA_WIDTH*2) := '1';
+          v.write_address                                                                                                              := 0;
+          v.read_address                                                                                                               := 0;
+          v.write_enable                                                                                                               := '1';
+          v.read_enable                                                                                                                := '1';
+          v.bram_write_data_M                                                                                                          := din;
+          v.writes_done_on_column                                                                                                      := writes_done_on_column;
+          v.bram_write_data_M_inv                                                                                                      := (others => '0');
+          v.bram_write_data_M_inv                                                                                                      := (others => '0');
+          v.bram_write_data_M_inv((to_integer(unsigned(r.writes_done_on_column))*2)*PIXEL_DATA_WIDTH*2)                                := '1';  -- creating the identity matrix
+          v.bram_write_data_M_inv((to_integer(unsigned(r.writes_done_on_column))*2+1)*PIXEL_DATA_WIDTH*2+P_BANDS*PIXEL_DATA_WIDTH*2-1) := '1';
         end if;
         v.state_reg.drive := IDLING;
                                         -- need to wait until valid data on all
       when STATE_STORE_CORRELATION_MATRIX =>
                                         -- SET BRAM to write input data 
-        v.write_address                                                                               := r.write_address +1;
-        v.read_address                                                                                := r.read_address+1;
-        v.write_enable                                                                                := '1';
-        v.read_enable                                                                                 := '1';
-        v.bram_write_data_M                                                                           := din;
-        v.bram_write_data_M_inv                                                                       := (others => '0');
-        v.bram_write_data_M_inv((to_integer(unsigned(writes_done_on_column))*2)*PIXEL_DATA_WIDTH*2)   := '1';  -- creating the identity matrix
-        v.bram_write_data_M_inv((to_integer(unsigned(writes_done_on_column))*2+1)*PIXEL_DATA_WIDTH*2) := '1';
-        if to_integer(unsigned(writes_done_on_column)) = P_BANDS/2-1 then
+        v.writes_done_on_column := writes_done_on_column;
+        v.write_address         := r.write_address +1;
+        v.read_address          := r.read_address+1;
+        v.write_enable          := '1';
+        v.read_enable           := '1';
+        v.bram_write_data_M     := din;
+        v.bram_write_data_M_inv := (others => '0');
+        if (to_integer(unsigned(r.writes_done_on_column)) +1 < P_BANDS/2) then
+          v.bram_write_data_M_inv(((to_integer(unsigned(r.writes_done_on_column))+1)*2)*PIXEL_DATA_WIDTH*2)                                := '1';  -- creating the identity matrix
+          v.bram_write_data_M_inv(((to_integer(unsigned(r.writes_done_on_column))+1)*2+1)*PIXEL_DATA_WIDTH*2+P_BANDS*PIXEL_DATA_WIDTH*2-1) := '1';
+        end if;
+        if to_integer(unsigned(r.writes_done_on_column)) = P_BANDS/2-1 then
                                                                           -- Need to wait until the entire correlation matrix have been stored
                                         -- in BRAM before starting to edit it.
           v.state_reg.state            := STATE_FORWARD_ELIMINATION;
@@ -303,8 +307,8 @@ begin
                                                                           --  v.inv_row_i :=                      -- row_j outputted from BRAM
     end case;
     if(reset_n = '0') then
-        v.read_enable  := '0';
-        v.write_enable := '0';
+      v.read_enable  := '0';
+      v.write_enable := '0';
                                                                           --     v.row_j :=                        --value outputted from BRAM;
                                                                           --     v.row_i :=                        -- row_j outputted from BRAM
                                                                           -- v.inv_row_j :=                        -- row_j outputted from BRAM
