@@ -6,59 +6,174 @@ library work;
 use work.Common_types_and_functions.all;
 
 entity top_last_division is
-  port(clk             : in    std_logic;
-       reset           : in    std_logic;
-       clk_en          : in    std_logic;
-       M               : in    matrix_reg_type;
-       M_last_division : inout matrix_reg_type);
+  port(clk                  : in  std_logic;
+       reset_n              : in  std_logic;
+       clk_en               : in  std_logic;
+       input_last_division  : in  input_last_division_reg_type;
+       output_last_division : out output_last_division_reg_type);
 end top_last_division;
 
 architecture Behavioral of top_last_division is
 
-  signal r, r_in : matrix_reg_type;
+  signal r, r_in             : input_last_division_reg_type;
+-- number of shifts required to approximate the division
+  signal number_of_shifts    : integer range 0 to 32;
+  signal divisor_is_negative : std_logic;
+  -- If the divisor is negative, we need to take two's complement of the divisor
+  signal divisor             : std_logic_vector(PIXEL_DATA_WIDTH*2 -1 downto 0);
+  signal divisor_valid       : std_logic                             := '0';
+  signal remainder_valid     : std_logic                             := '0';
+  signal shifter_valid       : std_logic                             := '0';
+  signal msb_of_divisor      : integer range 0 to 31;
+  type remainders_array is array(0 to PIXEL_DATA_WIDTH*2-2) of std_logic_vector(PIXEL_DATA_WIDTH*2-1 downto 0);
+  signal remainders          : remainders_array;
+  constant ONE               : signed(PIXEL_DATA_WIDTH*2-1 downto 0) := (0 => '1', others => '0');
+  -- to be used in two's complement.
+
+  type remainder_after_approximation_record is record
+    remainder        : std_logic_vector(PIXEL_DATA_WIDTH*2-1 downto 0);  -- For PIXEL_DATA_WIDTH of 16
+    number_of_shifts : integer range 0 to 31;
+    remainder_valid  : std_logic;
+    shifter_valid    : std_logic;
+  end record;
+  constant INITIAL_BEST_APPROX : remainder_after_approximation_record := (
+    remainder        => (PIXEL_DATA_WIDTH*2-1 => '0', others => '1'),
+    number_of_shifts => 0,
+    remainder_valid  => '0',
+    shifter_valid    => '0'
+    );
 
 begin
 
-  comb_process : process(M, r, reset)
-    variable v : matrix_reg_type;
-    variable test : std_logic_vector(31 downto 0);
-    variable v_i_i :  integer;
+  check_if_divisor_is_negative : process(input_last_division.state_reg.state, input_last_division.row_i, input_last_division.valid_data, reset_n)
+    variable divisor_valid_temp       : std_logic        := '0';
+    variable divisor_is_negative_temp : std_logic        := '0';
+    variable divisor_temp             : std_logic_vector := std_logic_vector(to_signed(1, PIXEL_DATA_WIDTH*2));
+  begin
+    if reset_n ='0' or not(input_last_division.state_reg.state =STATE_LAST_DIVISION)  then 
+      divisor_valid_temp       := '0';
+      divisor_is_negative_temp := '0';
+      divisor_temp             := std_logic_vector(to_signed(1, PIXEL_DATA_WIDTH*2));
+    elsif(input_last_division.row_i(input_last_division.index_i)(PIXEL_DATA_WIDTH*2-1) = '1' and input_last_division.valid_data = '1') then
+      -- row[i][i] is negative
+      -- using the absolute value
+      divisor_is_negative_temp := '1';
+      divisor_temp             := std_logic_vector(abs(signed(input_last_division.row_i(input_last_division.index_i))));
+      divisor_valid_temp       := '1';
+    elsif input_last_division.row_i(input_last_division.index_i)(PIXEL_DATA_WIDTH*2-1) = '0' and input_last_division.valid_data = '1' then
+      divisor_is_negative_temp := '0';
+      divisor_temp             := std_logic_vector(input_last_division.row_i(input_last_division.index_i));
+      divisor_valid_temp       := '1';
+    else
+      divisor_valid_temp       := '0';
+      divisor_is_negative_temp := '0';
+      divisor_temp             := std_logic_vector(to_signed(1, PIXEL_DATA_WIDTH*2));
+    end if;
+    divisor_valid       <= divisor_valid_temp;
+    divisor_is_negative <= divisor_is_negative_temp;
+    divisor             <= divisor_temp;
+  end process;
+
+  find_msb_of_divisor : process(input_last_division.row_i, divisor_valid)
+    variable msb_index : integer range 0 to 31;
+  begin
+    if(divisor_valid = '1' and input_last_division.state_reg.state = STATE_LAST_DIVISION) then
+      for i in 0 to PIXEL_DATA_WIDTH*2-2 loop
+        if(input_last_division.row_i(input_last_division.index_i)(i) = '1') then
+          -- the first '1' found is the msb.
+          msb_index := i;
+        end if;
+      end loop;
+    else
+      msb_index := 31;
+    end if;
+    msb_of_divisor <= msb_index;
+  end process;
+
+
+-- generate PIXEL_DATA_WIDTH*2-1 number of shifters that shifts
+-- A[i][i] n places in order to see how many shifts yield the best
+-- approximation to the division. Don't need to shift the
+-- 31 bit as this is the sign bit.
+  generate_shifters : for i in 1 to PIXEL_DATA_WIDTH*2-1 generate
+    signal remainder_after_approximation_i : remainder_after_approximation_record;
+  begin
+    process(divisor, divisor_valid, reset_n, input_last_division.state_reg)
+    begin
+      if reset_n = '0' or not(input_last_division.state_reg.state = STATE_LAST_DIVISION) then
+        remainder_after_approximation_i.remainder        <= std_logic_vector(shift_right(signed(divisor), i));
+        remainder_after_approximation_i.number_of_shifts <= i;
+        remainder_after_approximation_i.remainder_valid  <= '0';
+      elsif divisor_valid = '1' then
+        remainder_after_approximation_i.remainder        <= std_logic_vector(shift_right(signed(divisor), i));
+        remainder_after_approximation_i.number_of_shifts <= i;
+        remainder_after_approximation_i.remainder_valid  <= '1';
+      else
+        remainder_after_approximation_i.remainder        <= std_logic_vector(shift_right(signed(divisor), i));
+        remainder_after_approximation_i.number_of_shifts <= i;
+        remainder_after_approximation_i.remainder_valid  <= '0';
+      end if;
+    end process;
+    remainders(i-1) <= remainder_after_approximation_i.remainder;
+    remainder_valid <= remainder_after_approximation_i.remainder_valid;
+  end generate;
+
+  find_closest_approximation : process (remainders, msb_of_divisor, reset_n, input_last_division.state_reg, remainder_valid)
+    variable best_approx : remainder_after_approximation_record := INITIAL_BEST_APPROX;
+  begin
+    if reset_n = '0' or input_last_division.state_reg.state /= STATE_LAST_DIVISION then
+      best_approx := INITIAL_BEST_APPROX;
+    elsif(remainder_valid = '1') then
+      for i in 1 to PIXEL_DATA_WIDTH*2-2 loop
+        if to_integer(unsigned(remainders(i))) < to_integer(unsigned(best_approx.remainder)) and (i <= msb_of_divisor) then
+          -- This is a better approximation
+          best_approx.remainder        := remainders(i);
+          best_approx.number_of_shifts := i;
+          best_approx.remainder_valid  := remainder_valid;
+          best_approx.shifter_valid    := '1';
+        else
+          best_approx := INITIAL_BEST_APPROX;
+        end if;
+      end loop;
+    else
+      best_approx := INITIAL_BEST_APPROX;
+    end if;
+    number_of_shifts <= best_approx.number_of_shifts;
+    shifter_valid    <= best_approx.shifter_valid;
+  end process;
+
+
+  comb_process : process(input_last_division, r, reset_n, number_of_shifts, divisor_is_negative, divisor, shifter_valid)
+    variable v : input_last_division_reg_type;
   begin
 
-    v                            := r;
-    v.state_reg.fsm_start_signal := M.state_reg.fsm_start_signal;
-    if(M.state_reg.state = STATE_IDENTITY_MATRIX_BUILDING and not(r.state_reg.drive = STATE_IDENTITY_MATRIX_BUILDING_FINISHED)) then
-      if(M.state_reg.fsm_start_signal = START_IDENTITY_MATRIX_BUILDING and M.valid_matrix_data = '1') then
-        -- Loading matrix and set index_i to initial value
-        v                      := M;
-        v.row_reg.elim_index_i := std_logic_vector(to_signed(0, 32));
-        v.row_reg.valid_data   := '1';
-      end if;
-
-      if(to_integer(signed(v.row_reg.elim_index_i)) <= P_BANDS-1 and v.row_reg.valid_data = '1') then
+    v := r;
+    if(input_last_division.state_reg.state = STATE_LAST_DIVISION and input_last_division.valid_data = '1' and shifter_valid = '1') then
+      v := input_last_division;
+      if divisor_is_negative = '1' then
         for i in 0 to P_BANDS-1 loop
-
-        v_i_i:=to_integer(signed(v.matrix(to_integer(unsigned(v.row_reg.elim_index_i)), to_integer(unsigned(v.row_reg.elim_index_i)))));
-         --v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i) := std_logic_vector(to_signed((to_integer(signed(v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i)))+v_i_i/2) * 1/to_integer(signed(v.matrix(to_integer(unsigned(v.row_reg.elim_index_i)), to_integer(unsigned(v.row_reg.elim_index_i))))), 32));
-        v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i) := std_logic_vector(to_signed(to_integer(signed(v.matrix_inv(to_integer(unsigned(v.row_reg.elim_index_i)), i))) * 1/to_integer(signed(v.matrix(to_integer(unsigned(v.row_reg.elim_index_i)), to_integer(unsigned(v.row_reg.elim_index_i)))))+1/2, 32));
+          v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), number_of_shifts);
+          -- Negating the number with two's complement
+          v.inv_row_i(i) := not(v.inv_row_i(i)) + ONE;
+        end loop;
+      else
+        for i in 0 to P_BANDS-1 loop
+          v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), number_of_shifts);
         end loop;
       end if;
-      if( to_integer(signed(v.row_reg.elim_index_i)) >= P_BANDS-1) then
-         v.state_reg.drive := STATE_IDENTITY_MATRIX_BUILDING_FINISHED;
-        end if;
-      if (v.row_reg.elim_index_i < std_logic_vector(to_unsigned(P_BANDS-1, 32)) and M.state_reg.forward_elim_ctrl_signal /= START_IDENTITY_MATRIX_BUILDING) then
-        -- Wait until we actually have registered in some matrix-value before
-        -- altering the index.
-        v.row_reg.elim_index_i := std_logic_vector(to_signed(to_integer(signed(r.row_reg.elim_index_i))+1, 32));
-      end if;
     end if;
 
-    if(reset = '1') then
-      v.row_reg.elim_index_i := std_logic_vector(to_signed(0, 32));
-      v.row_reg.valid_data := '0';
+    if(reset_n = '0') then
+      v.valid_data := '0';
     end if;
-    r_in            <= v;
-    M_last_division <= r;
+    r_in                                        <= v;
+    output_last_division.new_inv_row_i          <= r.inv_row_i;
+    output_last_division.valid_data             <= r.valid_data;
+    output_last_division.index_i                <= r.index_i;
+    output_last_division.write_address_even     <= r.write_address_even;
+    output_last_division.write_address_odd      <= r.write_address_odd;
+    output_last_division.flag_write_to_even_row <= r.flag_write_to_even_row;
+    output_last_division.state_reg              <= r.state_reg;
   end process;
 
 
