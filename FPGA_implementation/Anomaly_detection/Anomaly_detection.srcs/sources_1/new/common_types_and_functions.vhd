@@ -87,9 +87,14 @@ package Common_types_and_functions is
 
   type elimination_write_state is (STATE_IDLE, FIRST_ELIMINATION, ODD_j_WRITE, EVEN_j_WRITE, EVEN_i_START, ODD_i_START);
 
+  type remainder_after_approximation_record is record
+    remainder        : std_logic_vector(PIXEL_DATA_WIDTH*2-1 downto 0);  -- For PIXEL_DATA_WIDTH of 16
+    number_of_shifts : integer range 0 to 31;
+    remainder_valid  : std_logic;
+  end record;
+
   type reg_state_type is record
     state                           : state_type;
-    write_state                     : state_type;
     drive                           : std_logic_vector(2 downto 0);
     fsm_start_signal                : std_logic_vector(1 downto 0);
     inner_loop_iter_finished        : std_logic;
@@ -101,25 +106,6 @@ package Common_types_and_functions is
     flag_forward_triangular_started : std_logic;
   end record;
 
-  type row_reg_type is record
-    row_j        : matrix_32(0 to 0, 0 to P_BANDS-1);
-    row_i        : matrix_32(0 to 0, 0 to P_BANDS-1);
-    inv_row_j    : matrix_32(0 to 0, 0 to P_BANDS-1);
-    inv_row_i    : matrix_32(0 to 0, 0 to P_BANDS-1);
-    a_j_i        : std_logic_vector(0 to 31);
-    a_i_i        : std_logic_vector(0 to 31);
-    elim_index_i : std_logic_vector(0 to 31);  -- outer loop index
-    elim_index_j : std_logic_vector(0 to 31);  -- inner loop index
-    valid_data   : std_logic;
-  end record;
-
-  type matrix_reg_type is record
-    matrix            : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
-    matrix_inv        : matrix_32 (0 to P_BANDS-1, 0 to P_BANDS-1);
-    valid_matrix_data : std_logic;
-    row_reg           : row_reg_type;
-    state_reg         : reg_state_type;
-  end record;
 
   type input_elimination_reg_type is record
     row_j                  : row_array;
@@ -220,29 +206,29 @@ package Common_types_and_functions is
   end record;
 
   type input_last_division_reg_type is record
-    row_i     : row_array;
-    inv_row_i : row_array;
-    state_reg : reg_state_type;
+    row_i                  : row_array;
+    inv_row_i              : row_array;
+    state_reg              : reg_state_type;
+    index_i                : integer range 0 to B_RAM_SIZE -1;
+    flag_write_to_even_row : std_logic;  -- Maximum need to write one row at the
+    -- time in STATE LAST DIVISION
+    valid_data             : std_logic;
+    write_address_even     : integer range 0 to B_RAM_SIZE-1;
+    write_address_odd      : integer range 0 to B_RAM_SIZE-1;
+    --
+    best_approx            : remainder_after_approximation_record;
+    msb_index              : integer range 0 to 31;
   end record;
 
   type output_last_division_reg_type is record
-    new_inv_row_i : row_array;
-    r_addr_next   : integer range 0 to B_RAM_SIZE-1;
-    wr_addr_new   : integer range 0 to B_RAM_SIZE-1;
-    state_reg     : reg_state_type;
+    new_inv_row_i          : row_array;
+    valid_data             : std_logic;
+    index_i                : integer range 0 to B_RAM_SIZE -1;
+    write_address_even     : integer range 0 to B_RAM_SIZE-1;
+    write_address_odd      : integer range 0 to B_RAM_SIZE-1;
+    flag_write_to_even_row : std_logic;
+    state_reg              : reg_state_type;
   end record;
-
-  constant C_ROW_REG_TYPE_INIT : row_reg_type := (
-    row_j        => (others => (others => (others => '0'))),
-    row_i        => (others => (others => (others => '0'))),
-    inv_row_j    => (others => (others => (others => '0'))),
-    inv_row_i    => (others => (others => (others => '0'))),
-    a_j_i        => (others => '0'),
-    a_i_i        => (others => '0'),
-    elim_index_i => (others => '0'),
-    elim_index_j => (others => '0'),
-    valid_data   => '0'
-    );
 
 
 --  constant C_STATE_REG_TYPE_INIT : reg_state_type := (
@@ -258,13 +244,6 @@ package Common_types_and_functions is
 --    flag_forward_triangular_started => '0'
 --    );
 
---  constant C_MATRIX_REG_TYPE_INIT : matrix_reg_type := (
---    matrix            => (others => (others => (others => '0'))),
---    matrix_inv        => (others => (others => (others => '0'))),
---    valid_matrix_data => '0',
---    row_reg           => C_ROW_REG_TYPE_INIT,
---    state_reg         => C_STATE_REG_TYPE_INIT
---    );
 
   function log2(i                    : natural) return integer;
   function sel (n                    : natural) return integer;
