@@ -83,9 +83,11 @@ package Common_types_and_functions is
   constant STATE_FORWARD_ELIM            : std_logic_vector(1 downto 0)  := "11";
 
   -- Different state machines used in the design
-  type state_type is (STATE_IDLE, STATE_STORE_CORRELATION_MATRIX, STATE_FORWARD_ELIMINATION, STATE_BACKWARD_ELIMINATION, STATE_LAST_DIVISION);
+  type state_type is (STATE_IDLE, STATE_STORE_CORRELATION_MATRIX, STATE_FORWARD_ELIMINATION, STATE_BACKWARD_ELIMINATION, STATE_LAST_DIVISION, STATE_OUTPUT_INVERSE_MATRIX);
 
   type elimination_write_state is (STATE_IDLE, FIRST_ELIMINATION, ODD_j_WRITE, EVEN_j_WRITE, EVEN_i_START, ODD_i_START);
+  type forward_elimination_write_state_type is (STATE_IDLE, CHECK_DIAGONAL_ELEMENT_IS_ZERO, FLIP_ROWS, EVEN_j_WRITE, ODD_j_WRITE);
+  type last_division_write_state_type is (STATE_IDLE, EVEN_i_WRITE, ODD_i_WRITE);
 
   type remainder_after_approximation_record is record
     remainder        : std_logic_vector(PIXEL_DATA_WIDTH*2-1 downto 0);  -- For PIXEL_DATA_WIDTH of 16
@@ -108,67 +110,75 @@ package Common_types_and_functions is
 
 
   type input_elimination_reg_type is record
-    row_j                  : row_array;
-    row_i                  : row_array;
-    inv_row_j              : row_array;
-    inv_row_i              : row_array;
-    state_reg              : reg_state_type;
-    index_i                : integer range 0 to B_RAM_SIZE -1;
-    index_j                : integer range 0 to B_RAM_SIZE -1;
-    valid_data             : std_logic;
-    write_address_even     : integer range 0 to B_RAM_SIZE-1;
-    write_address_odd      : integer range 0 to B_RAM_SIZE-1;
-    read_address           : integer range 0 to B_RAM_SIZE-1;
-    flag_write_to_even_row : std_logic;
-    flag_write_to_odd_row  : std_logic;
-    write_enable_odd       : std_logic;
-    write_enable_even      : std_logic;
+    row_j                           : row_array;
+    row_i                           : row_array;
+    row_even                        : row_array;
+    row_odd                         : row_array;
+    inv_row_even                    : row_array;
+    inv_row_odd                     : row_array;
+    inv_row_j                       : row_array;
+    inv_row_i                       : row_array;
+    state_reg                       : reg_state_type;
+    index_i                         : integer range 0 to B_RAM_SIZE -1;
+    index_j                         : integer range 0 to B_RAM_SIZE -1;
+    valid_data                      : std_logic;
+    write_address_even              : integer range 0 to B_RAM_SIZE-1;
+    write_address_odd               : integer range 0 to B_RAM_SIZE-1;
+    read_address                    : integer range 0 to B_RAM_SIZE-1;
+    flag_write_to_even_row          : std_logic;
+    flag_write_to_odd_row           : std_logic;
+    write_enable_odd                : std_logic;
+    write_enable_even               : std_logic;
+    forward_elimination_write_state : forward_elimination_write_state_type;
   end record;
   type inverse_top_level_reg_type is record
-    row_j                                             : row_array;
-    row_i                                             : row_array;
-    inv_row_j                                         : row_array;
-    inv_row_i                                         : row_array;
-    state_reg                                         : reg_state_type;
-    index_i_two_cycles_ahead                          : integer range 0 to B_RAM_SIZE-1;
-    index_j_two_cycles_ahead                          : integer range 0 to B_RAM_SIZE-1;
-    index_i                                           : integer range 0 to B_RAM_SIZE -1;
-    index_j                                           : integer range 0 to B_RAM_SIZE -1;
-    valid_data                                        : std_logic;
-    write_address_even                                : integer range 0 to B_RAM_SIZE-1;
-    write_address_odd                                 : integer range 0 to B_RAM_SIZE-1;
-    read_address_even                                 : integer range 0 to B_RAM_SIZE-1;
-    read_address_odd                                  : integer range 0 to B_RAM_SIZE-1;
-    bram_write_data_M                                 : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
-    bram_write_data_M_inv                             : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
-    write_enable_even                                 : std_logic;
-    write_enable_odd                                  : std_logic;
-    read_enable                                       : std_logic;
-    writes_done_on_column                             : std_logic_vector(1 downto 0);  --should
+    row_j                                               : row_array;
+    row_i                                               : row_array;
+    inv_row_j                                           : row_array;
+    inv_row_i                                           : row_array;
+    state_reg                                           : reg_state_type;
+    index_i_two_cycles_ahead                            : integer range 0 to B_RAM_SIZE-1;
+    index_j_two_cycles_ahead                            : integer range 0 to B_RAM_SIZE-1;
+    index_i                                             : integer range 0 to B_RAM_SIZE -1;
+    index_j                                             : integer range 0 to B_RAM_SIZE -1;
+    valid_data                                          : std_logic;
+    write_address_even                                  : integer range 0 to B_RAM_SIZE-1;
+    write_address_odd                                   : integer range 0 to B_RAM_SIZE-1;
+    read_address_even                                   : integer range 0 to B_RAM_SIZE-1;
+    read_address_odd                                    : integer range 0 to B_RAM_SIZE-1;
+    bram_write_data_M                                   : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+    bram_write_data_M_inv                               : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+    write_enable_even                                   : std_logic;  -- Remove?
+    write_enable_odd                                    : std_logic;  -- Remove?
+    read_enable                                         : std_logic;
+    writes_done_on_column                               : std_logic_vector(1 downto 0);  --should
     --be size log2(P_BANDS/2)downto 0
-    flag_first_data_elimination                       : std_logic;
-    flag_waited_one_clk                               : std_logic;
-    flag_first_memory_request                         : std_logic;  -- between each state shift
-    flag_write_to_odd_row                             : std_logic;  -- row_j might be on both odd and
+    flag_first_data_elimination                         : std_logic;
+    flag_waited_one_clk                                 : std_logic;
+    flag_first_memory_request                           : std_logic;  -- between each state shift
+    flag_write_to_odd_row                               : std_logic;  -- row_j might be on both odd and
                                         -- even rows.
-    flag_write_to_even_row                            : std_logic;  -- sometimes its necessary to write
+    flag_write_to_even_row                              : std_logic;  -- sometimes its necessary to write
                                         -- both rows.
     --^ Needed for forward elimination
-    elimination_write_state                           : elimination_write_state;
-    read_address_row_i_two_cycles_ahead               : integer range 0 to B_RAM_SIZE-1;
+    elimination_write_state                             : elimination_write_state;
+    read_address_row_i_two_cycles_ahead                 : integer range 0 to B_RAM_SIZE-1;
     -- read address of the row i
-    address_row_i                                     : integer range 0 to B_RAM_SIZE-1;
-    flag_prev_row_i_at_odd_row                        : std_logic;  --two cycles ahead 
-    flag_wr_row_i_at_odd_row                          : std_logic;
+    address_row_i                                       : integer range 0 to B_RAM_SIZE-1;
+    flag_prev_row_i_at_odd_row                          : std_logic;  --two cycles ahead 
+    flag_wr_row_i_at_odd_row                            : std_logic;
     ---*
-    flag_finished_sending_data_to_BRAM_one_cycle_ago  : std_logic;
-    flag_finished_sending_data_to_BRAM_two_cycles_ago : std_logic;
+    flag_finished_sending_data_to_BRAM_one_cycle_ago    : std_logic;
+    flag_finished_sending_data_to_BRAM_two_cycles_ago   : std_logic;
+    flag_finished_sending_data_to_BRAM_three_cycles_ago : std_logic;
+    flag_last_read_backward_elimination                 : std_logic;
 
     flag_first_iter_backward_elim : std_logic;
 
-    flag_last_read_backward_elimination : std_logic;
-    wait_counter                        : integer range 0 to 3;
-    flag_waiting_for_bram_update        : std_logic;
+    wait_counter                 : integer range 0 to 3;
+    flag_waiting_for_bram_update : std_logic;
+    -- Needed for last division:
+    last_division_write_state    : last_division_write_state_type;
 
   end record;
 

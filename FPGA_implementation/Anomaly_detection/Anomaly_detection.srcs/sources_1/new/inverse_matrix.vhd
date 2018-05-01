@@ -91,6 +91,7 @@ architecture Behavioral of inverse_matrix is
 
   signal input_forward_elimination  : input_elimination_reg_type;
   signal input_backward_elimination : input_elimination_reg_type;
+  signal input_last_division        : input_last_division_reg_type;
   constant EVEN_ROW_TOP_INDEX       : integer range 0 to P_BANDS*PIXEL_DATA_WIDTH*2-1   := P_BANDS*PIXEL_DATA_WIDTH*2 -1;
   -- index of the top bit of the even rows in data out from the BRAMs
   constant ODD_ROW_TOP_INDEX        : integer range 0 to 2*P_BANDS*PIXEL_DATA_WIDTH*2-1 := 2*P_BANDS*PIXEL_DATA_WIDTH*2 -1;
@@ -198,7 +199,6 @@ begin
 
     -- Process to control data input to BRAMs.
     process(valid, r, output_forward_elim, output_backward_elim, output_last_division)
-      variable test : std_logic_vector(31 downto 0);
     begin
       if(r.state_reg.state = STATE_STORE_CORRELATION_MATRIX) then
         inv_data_in_even_i <= r.bram_write_data_M_inv(PIXEL_DATA_WIDTH*2-1 + i*PIXEL_DATA_WIDTH*2 downto i*PIXEL_DATA_WIDTH*2);
@@ -209,15 +209,22 @@ begin
           -- Received data from backward elimination.
           if(output_backward_elim.flag_write_to_odd_row = '1') then
             -- the j-indexed row is an odd row of the matrix
-            test              := std_logic_vector(output_backward_elim.new_inv_row_j(i));
             inv_data_in_odd_i <= std_logic_vector(output_backward_elim.new_inv_row_j(i));
           elsif(output_backward_elim.flag_write_to_even_row = '1') then
             -- the j-indexed row is an even row of the matrix 
-            test               := std_logic_vector(output_backward_elim.new_inv_row_j(i));
             inv_data_in_even_i <= std_logic_vector(output_backward_elim.new_inv_row_j(i));
           end if;
         end if;
       elsif(r.state_reg.state = STATE_LAST_DIVISION) then
+        if output_last_division.valid_data = '1' then
+          if output_last_division.flag_write_to_even_row = '1' then
+            -- index i is at an even index of the matrix
+            inv_data_in_even_i <= std_logic_vector(output_last_division.new_inv_row_i(i));
+          elsif output_last_division.flag_write_to_even_row = '0' then
+            -- index i is at an odd index of the matrix
+            inv_data_in_odd_i <= std_logic_vector(output_last_division.new_inv_row_i(i));
+          end if;
+        end if;
       end if;
     end process;
 -- DATA outputted from the BRAMs
@@ -234,13 +241,6 @@ begin
   --     input_elimination          => input_elimination,
   --     output_forward_elimination => output_forward_elim);
 
---  top_backward_elimination_1 : entity work.top_backward_elimination
---    port map (
---      clk                  => clk,
---      reset_n              => reset_n,
---      clk_en               => clk_en,
---      din                  => input_backward_elimination,
---      backward_elim_output => output_backward_elim);
   backward_elim_core_1 : entity work.backward_elim_core
     port map (
       clk                  => clk,
@@ -249,14 +249,15 @@ begin
       input_backward_elim  => input_backward_elimination,
       output_backward_elim => output_backward_elim);
 
-  -- top_last_division_1 : entity work.top_last_division
-  --   port map (
-  --     clk             => clk,
-  --     reset_n         => reset_n,
-  --     clk_en          => clk_en,
-  --     M               => M_inv,
-  --     M_last_division => output_last_division);
-  just_for_test : process(data_out_brams_M)
+  top_last_division_1 : entity work.top_last_division
+    port map (
+      clk                  => clk,
+      reset_n              => reset_n,
+      clk_en               => clk_en,
+      input_last_division  => input_last_division,
+      output_last_division => output_last_division);
+
+  just_for_test : process(data_out_brams_M, r)
     variable row_even, row_odd, inv_row_even, inv_row_odd : row_array;
   begin
     for i in 0 to P_BANDS-1 loop
@@ -281,16 +282,11 @@ begin
       write_enable_inv_even <= '1';
       write_enable_inv_odd  <= '1';
     elsif (r.state_reg.state = STATE_FORWARD_ELIMINATION) then
-      read_address_even <= r.read_address_even;
-      read_address_odd  <= r.read_address_odd;
+    -- Set read addresses to output from top elimination
     elsif(r.state_reg.state = STATE_BACKWARD_ELIMINATION) then
       read_address_even <= r.read_address_even;
       read_address_odd  <= r.read_address_odd;
       if(output_backward_elim.valid_data = '1') then
-        --write_enable_even     <= output_backward_elim.write_enable_even;
-        --write_enable_odd      <= output_backward_elim.write_enable_odd;
-        --write_enable_inv_even <= output_backward_elim.write_enable_even;
-        --write_enable_inv_odd  <= output_backward_elim.write_enable_odd;
         -- Received data from backward elimination.
         if(output_backward_elim.flag_write_to_odd_row = '1') then
           -- the j-indexed row is an odd row of the matrix
@@ -316,16 +312,50 @@ begin
     elsif r.state_reg.state = STATE_LAST_DIVISION then
       read_address_odd  <= r.read_address_odd;
       read_address_even <= r.read_address_even;
+      if output_last_division.valid_data = '1' then
+        write_enable_inv_odd  <= not(output_last_division.flag_write_to_even_row);
+        write_enable_inv_even <= output_last_division.flag_write_to_even_row;
+        write_enable_odd      <= not(output_last_division.flag_write_to_even_row);
+        write_enable_even     <= output_last_division.flag_write_to_even_row;
+        write_address_even    <= output_last_division.write_address_even;
+        write_address_odd     <= output_last_division.write_address_odd;
+      else
+        write_enable_inv_even <= '0';
+        write_enable_inv_odd  <= '0';
+        write_enable_even     <= '0';
+        write_enable_odd      <= '0';
+      end if;
+    else
+      write_enable_inv_even <= '0';
+      write_enable_inv_odd  <= '0';
+      write_enable_even     <= '0';
+      write_enable_odd      <= '0';
+
     end if;
+
 
   end process;
 
--- control inputs to elimination processes
+-- control inputs to elimination processes and last division
   control_input_to_elimination : process(r, output_backward_elim, output_last_division, output_forward_elim)
   begin
-    if(r.state_reg.state = STATE_FORWARD_ELIMINATION) then
-    elsif(r.state_reg.state = STATE_BACKWARD_ELIMINATION) then
-      if(r.valid_data = '1') then
+    if(r.valid_data = '1') then
+      if(r.state_reg.state = STATE_FORWARD_ELIMINATION) then
+        -- In state forward elimination the reads and writes are issued from
+        -- top_forward_elimination, not from top-inverse
+        for i in 0 to P_BANDS-1 loop
+          -- the even row
+          input_forward_elimination.row_even(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
+          -- the odd row
+          input_forward_elimination.row_odd(i)      := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
+          -- the even inverse row
+          input_forward_elimination.inv_row_even(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
+          -- the odd inverse row
+          input_forward_elimination.inv_row_odd(i)  := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
+        end loop;
+        -- USE the same elimination-core as backward elimination
+
+      elsif(r.state_reg.state = STATE_BACKWARD_ELIMINATION) then
         -- set input to backward elimination
         input_backward_elimination.row_j                  <= r.row_j;
         input_backward_elimination.row_i                  <= r.row_i;
@@ -341,9 +371,17 @@ begin
         input_backward_elimination.flag_write_to_odd_row  <= r.flag_write_to_odd_row;
         input_backward_elimination.write_enable_even      <= r.write_enable_even;
         input_backward_elimination.write_enable_odd       <= r.write_enable_odd;
+      elsif(r.state_reg.state = STATE_LAST_DIVISION) then
+        -- Set input to last division
+        input_last_division.row_i                  <= r.row_i;
+        input_last_division.inv_row_i              <= r.inv_row_i;
+        input_last_division.state_reg              <= r.state_reg;
+        input_last_division.index_i                <= r.index_i;
+        input_last_division.valid_data             <= r.valid_data;
+        input_last_division.flag_write_to_even_row <= r.flag_write_to_even_row;
+        input_last_division.write_address_even     <= r.write_address_even;
+        input_last_division.write_address_odd      <= r.write_address_odd;
       end if;
-
-    elsif(r.state_reg.state = STATE_LAST_DIVISION) then
     end if;
   end process;
 
@@ -361,7 +399,6 @@ begin
           v.state_reg.state                                                                                                        := STATE_STORE_CORRELATION_MATRIX;
                                         -- Set write address to BRAMS
           v.write_address_even                                                                                                     := 0;
-          v.flag_last_read_backward_elimination                                                                                    := '0';
           v.read_address_odd                                                                                                       := 0;
           v.read_address_even                                                                                                      := 0;
           v.write_enable_odd                                                                                                       := '1';
@@ -381,10 +418,10 @@ begin
       when STATE_STORE_CORRELATION_MATRIX =>
                                         -- SET BRAM to write input data 
         v.writes_done_on_column                                                                                                  := writes_done_on_column;
-        v.write_address_even                                                                                                     := r.write_address_even +1;  -- r.write_address +1;
-        v.write_address_odd                                                                                                      := r.write_address_odd +1;  -- r.write_address +1;
-        v.read_address_odd                                                                                                       := r.read_address_odd+1;
-        v.read_address_even                                                                                                      := r.read_address_even+1;
+        v.write_address_even                                                                                                     := r.write_address_even +1;
+        v.write_address_odd                                                                                                      := r.write_address_odd +1;
+        v.read_address_odd                                                                                                       := 0;
+        v.read_address_even                                                                                                      := 0;
         v.write_enable_even                                                                                                      := '1';
         v.write_enable_odd                                                                                                       := '1';
         v.read_enable                                                                                                            := '1';
@@ -400,11 +437,15 @@ begin
         if to_integer(unsigned(r.writes_done_on_column)) = P_BANDS/2-1 then
                                                                                                                                           -- Need to wait until the entire correlation matrix have been stored
                                         -- in BRAM before starting to edit it.
-          v.state_reg.state            := STATE_FORWARD_ELIMINATION;
-          v.state_reg.fsm_start_signal := START_FORWARD_ELIMINATION;
-          v.write_enable_even          := '0';
-          v.write_enable_odd           := '0';
-          v.wait_counter               := 0;
+          v.read_enable                         := '1';
+          v.read_address_even                   := 1;
+          v.read_address_odd                    := 1;
+          v.state_reg.state                     := STATE_FORWARD_ELIMINATION;
+          v.state_reg.fsm_start_signal          := START_FORWARD_ELIMINATION;
+          v.write_enable_even                   := '0';
+          v.write_enable_odd                    := '0';
+          v.wait_counter                        := 0;
+          v.flag_last_read_backward_elimination := '0';
 
         end if;
         if valid = '0' then
@@ -412,10 +453,9 @@ begin
           v.state_reg.drive := STATE_IDLE_DRIVE;
         end if;
       when STATE_FORWARD_ELIMINATION =>
-        v.state_reg.fsm_start_signal := IDLING;
-        -- expecting data from FORWARD_ELIMINATION
-        -- it must write to BRAM before being finished
 
+        -- Set first memory_request?
+        -- Set write_state?
 
         --*FOR TESTING OF BACKWARD_ELIMINATION ONLY*--
         -- Needs to be a if here somewhere under the rainbow
@@ -429,18 +469,6 @@ begin
         --even BRAMs respectively
         --* END OF TEST SECTION FOR BACKWARD ELIMINATION *--
 
-        if(output_forward_elim.state_reg.drive = STATE_FORWARD_ELIMINATION_FINISHED) then
-          v.row_j                      := output_forward_elim.new_row_j;  -- going to be
-                                        -- written to BRAM
-          v.row_i                      := output_forward_elim.new_row_i;
-          v.inv_row_j                  := output_forward_elim.new_inv_row_j;
-          v.state_reg.drive            := output_forward_elim.state_reg.drive;
-          v.state_reg.state            := STATE_BACKWARD_ELIMINATION;
-          v.state_reg.fsm_start_signal := START_BACKWARD_ELIMINATION;
-          -- Need to read the two last rows. Making ready for backward elimination
-          v.read_address_odd           := P_BANDS/2-1;
-          v.read_address_even          := P_BANDS/2-1;
-        end if;
       when STATE_BACKWARD_ELIMINATION =>
         if(r.flag_first_iter_backward_elim = '1') then
           -- Read first data from BRAMs 
@@ -467,6 +495,7 @@ begin
           v.flag_first_iter_backward_elim                     := '0';
           v.wait_counter                                      := 0;
           v.flag_waiting_for_bram_update                      := '0';
+          v.flag_last_read_backward_elimination               := '0';
         end if;
 
         if(r.flag_first_memory_request = '1') then
@@ -498,7 +527,7 @@ begin
           for i in 0 to P_BANDS-1 loop
             v.row_j(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
             v.row_i(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
--- the odd row
+            -- the odd row
             v.inv_row_j(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
             v.inv_row_i(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
           end loop;
@@ -628,8 +657,8 @@ begin
               v.wait_counter                 := r.wait_counter+1;
               v.flag_waiting_for_bram_update := '1';
             else
-              v.wait_counter :=0;
-              v.flag_waiting_for_bram_update :='0';
+              v.wait_counter                 := 0;
+              v.flag_waiting_for_bram_update := '0';
               if(v.index_j >= 2) then
                 v.elimination_write_state := ODD_j_WRITE;
               elsif v.index_j < 2 then
@@ -678,7 +707,7 @@ begin
               for i in 0 to P_BANDS-1 loop
                 v.row_j(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
                 v.row_i(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
--- the odd row
+                -- the odd row
                 v.inv_row_j(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
                 v.inv_row_i(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
               end loop;
@@ -731,20 +760,36 @@ begin
                 end if;
               end if;
             else
-              --v                                                   := r;
-              --v.flag_finished_sending_data_to_BRAM_one_cycle_ago  := '1';
+              v.read_address_even                                 := 0;
+              v.read_address_odd                                  := 0;
               v.flag_finished_sending_data_to_BRAM_two_cycles_ago := '1';
             end if;
 
             if(r.flag_finished_sending_data_to_BRAM_two_cycles_ago = '1') then
-              v.state_reg.state := STATE_LAST_DIVISION;
+              v.read_address_even                                   := 0;
+              v.read_address_odd                                    := 0;
+              v.flag_finished_sending_data_to_BRAM_three_cycles_ago := '1';
+            end if;
+            if r.flag_finished_sending_data_to_BRAM_three_cycles_ago = '1' then
+              v.state_reg.state                                     := STATE_LAST_DIVISION;
+              v.last_division_write_state                           := EVEN_i_WRITE;
+              v.valid_data                                          := '0';
+              v.index_i_two_cycles_ahead                            := 2;
+              v.flag_first_memory_request                           := '1';  -- used to indicate that the
+                                        -- next cycle the first write
+                                        -- will happen from STATE_LAST_DIVISION
+              v.read_address_even                                   := 0;
+              v.read_address_odd                                    := 0;
+              v.flag_finished_sending_data_to_BRAM_one_cycle_ago    := '0';
+              v.flag_finished_sending_data_to_BRAM_two_cycles_ago   := '0';
+              v.flag_finished_sending_data_to_BRAM_three_cycles_ago := '0';
             end if;
 
           when EVEN_i_START =>
             for i in 0 to P_BANDS-1 loop
               v.row_i(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
               v.row_j(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
--- the odd row
+              -- the odd row
               v.inv_row_i(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
               v.inv_row_j(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
             end loop;
@@ -796,36 +841,80 @@ begin
           when others =>
         end case;
       when STATE_LAST_DIVISION =>
-        if r.wait_counter < B_RAM_WAIT_CLK_CYCLES then
-          v.read_address_even := 0;
-          v.read_address_odd  := 0;
-          v.wait_counter      := r.wait_counter +1;
-        else
-          v.read_address_even := 1;
-          v.read_address_odd  := 1;
-        end if;
-        if(output_last_division.state_reg.drive = STATE_LAST_DIVISION_FINISHED) then
-          -- state_reg.drive as finish-check signal
-          v.inv_row_i       := output_last_division.new_inv_row_i;
-          v.state_reg.drive := output_last_division.state_reg.drive;
-        end if;
+        case r.last_division_write_state is
+          when EVEN_i_WRITE =>
+            if (r.flag_first_memory_request = '1') then
+              -- First write is to a even row
+              v.index_i                   := 0;
+              v.flag_first_memory_request := '0';
+              v.write_address_even        := 0;
+              v.write_address_odd         := 0;
+              v.write_address_even        := 0;
+              v.write_address_odd         := 0;
+              v.valid_data                := '1';
+            else
+              v.index_i            := r.index_i+1;
+              v.write_address_even := write_address_even +1;
+              v.write_address_odd  := write_address_odd+1;
+            end if;
+            v.flag_write_to_even_row := '1';
+            v.flag_write_to_odd_row  := '0';
+            if r.read_address_even < P_BANDS/2-1 then
+              v.read_address_even := r.read_address_even+1;
+              v.read_address_odd  := r.read_address_even+1;
+            end if;
+            for i in 0 to P_BANDS-1 loop
+              -- data is located in the even part of the output from BRAM
+              v.row_i(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
+              v.inv_row_i(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
+            end loop;
+            if v.index_i <= P_BANDS-2 then
+              v.last_division_write_state := ODD_i_WRITE;
+            end if;
+          when ODD_i_WRITE =>
+            v.index_i := r.index_i +1;
+            if v.index_i > P_BANDS-1 then
+            -- top_last_division is finished written
+            --   v.state_reg.state := STATE_OUTPUT_INVERSE_MATRIX;
+            else
+              -- row_i is outputted from odd BRAMs(located at higher end of output)
+              for i in 0 to P_BANDS-1 loop
+                v.row_i(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
+                v.inv_row_i(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
+              end loop;
+              v.read_address_even      := r.read_address_even;
+              v.read_address_odd       := r.read_address_odd;
+              v.flag_write_to_even_row := '0';
+              v.flag_write_to_odd_row  := '1';
+            end if;
+            if v.index_i <= P_BANDS-3 then
+              v.last_division_write_state := EVEN_i_WRITE;
+            end if;
+          when others =>
+            v.read_address_even      := 0;
+            v.read_address_odd       := 0;
+            v.flag_write_to_even_row := '0';
+            v.flag_write_to_odd_row  := '0';
+        end case;
+      --when STATE_OUTPUT_INVERSE_MATRIX =>
       when others =>
-        v.read_enable       := '0';
-        v.write_enable_even := '0';
-        v.write_enable_odd  := '0';
-    --      v.row_j :=                      -- row_j outputted from BRAM
-    --      v.row_i :=                      -- row_j outputted from BRAM
-    --  v.inv_row_j :=                      -- row_j outputted from BRAM
-    --  v.inv_row_i :=                      -- row_j outputted from BRAM
+        v.read_enable               := '0';
+        v.write_enable_even         := '0';
+        v.write_enable_odd          := '0';
+        v.elimination_write_state   := STATE_IDLE;
+        v.state_reg.state           := STATE_IDLE;
+        v.last_division_write_state := STATE_IDLE;
+        v.valid_data                := '0';
+
     end case;
     if(reset_n = '0') then
-      v.read_enable       := '0';
-      v.write_enable_even := '0';
-      v.write_enable_odd  := '0';
-    --     v.row_j :=                        --value outputted from BRAM;
-    --     v.row_i :=                        -- row_j outputted from BRAM
-    -- v.inv_row_j :=                        -- row_j outputted from BRAM
-    -- v.inv_row_i :=                        -- row_j outputted from BRAM
+      v.read_enable               := '0';
+      v.write_enable_even         := '0';
+      v.write_enable_odd          := '0';
+      v.elimination_write_state   := STATE_IDLE;
+      v.state_reg.state           := STATE_IDLE;
+      v.last_division_write_state := STATE_IDLE;
+      v.valid_data                := '0';
     end if;
     r_in <= v;
   end process;
@@ -835,7 +924,6 @@ begin
   begin
     if rising_edge(clk) and clk_en = '1' then
       if(reset_n = '0') then
-                                        --r.matrix_inv <= M_identity_matrix;
       else
         r <= r_in;
       end if;
