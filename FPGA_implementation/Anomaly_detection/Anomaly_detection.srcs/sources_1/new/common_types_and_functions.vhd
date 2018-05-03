@@ -39,15 +39,13 @@ package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
   constant N_PIXELS                   : integer range 0 to 628864 := 628864;  -- 578 pixels per row * 1088 rows
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS                    : integer range 0 to 100    := 4;
+  constant P_BANDS                    : integer range 0 to 100    := 20;
   --constant P_BANDS : integer := 100;
   -- K is size of the kernel used in LRX. 
   constant K                          : integer;
+  -- PIXEL_DATA_WIDTH is the width of the raw input data from the HSI
   constant PIXEL_DATA_WIDTH           : integer range 0 to 16     := 16;
-  constant NUMBER_OF_WRITES_PER_CYCLE : integer range 0 to 2      := 2;  -- NUMBER of
-                                        -- writes to
-                                        -- BRAM per
-                                        -- cycle
+  constant NUMBER_OF_WRITES_PER_CYCLE : integer range 0 to 2      := 2;  
   constant BRAM_TDP_ADDRESS_WIDTH     : integer range 0 to 10     := 10;
   -- component generics
   constant B_RAM_SIZE                 : integer                   := 100;
@@ -162,8 +160,9 @@ package Common_types_and_functions is
     write_enable_even                                   : std_logic;  -- Remove?
     write_enable_odd                                    : std_logic;  -- Remove?
     read_enable                                         : std_logic;
-    writes_done_on_column                               : std_logic_vector(1 downto 0);  --should
-    --be size log2(P_BANDS/2)downto 0
+    writes_done_on_column                               : std_logic_vector(3 downto 0);  --should
+    --be size log2(P_BANDS/2)downto 0. Need to edit the size manually if
+    --changing P_BANDS.
     flag_first_data_elimination                         : std_logic;
     flag_waited_one_clk                                 : std_logic;
     flag_first_memory_request                           : std_logic;  -- between each state shift
@@ -190,8 +189,15 @@ package Common_types_and_functions is
     flag_waiting_for_bram_update  : std_logic;
     -- Needed for last division:
     last_division_write_state     : last_division_write_state_type;
-    counter_output_inverse_matrix : integer in range 0 to P_BANDS/2-1;
+    counter_output_inverse_matrix : integer range 0 to P_BANDS/2-1;
 
+  end record;
+
+  type inverse_output_reg_type is record
+    --outputting two rows of the inverse matrix per cycle:
+    two_inverse_rows : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH *2*2-1 downto 0);
+    valid_data       : std_logic;
+    address          : integer range 0 to P_BANDS/2-1;
   end record;
 
   type output_forward_elimination_reg_type is record

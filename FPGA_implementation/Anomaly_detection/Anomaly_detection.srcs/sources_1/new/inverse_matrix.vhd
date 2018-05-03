@@ -48,16 +48,13 @@ entity inverse_matrix is
         clk                   : in  std_logic;
         valid                 : in  std_logic;  -- connect this to valid_out from
         -- correlation module
+        -- assumes that data are inputted row-wise, two rows at the time
         din                   : in  std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
--- assumes that data are inputted row-wise
-        --shifted_in_pixel_counter : in    std_logic_vector(log2(N_PIXELS) downto 0);
-        writes_done_on_column : in  std_logic_vector(log2(P_BANDS/2) downto
-                                                    0);  -- increases by one
-                                                         -- for every two
-                                                         -- writes to BRAM
-        inverse_rows          : out signed(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0)  --outputting two and
-                                        --two rows of the inverse matrix
-        );
+        --increases by one for every two write to BRAM:
+        writes_done_on_column : in  std_logic_vector(log2(P_BANDS/2) downto 0);
+        -- outputting two and two rows of the inverse matrix
+        inverse_rows          : out inverse_output_reg_type
+    );
 end inverse_matrix;
 
 architecture Behavioral of inverse_matrix is
@@ -79,7 +76,9 @@ architecture Behavioral of inverse_matrix is
   signal write_enable_inv_odd  : std_logic := '0';
   signal write_enable_inv_even : std_logic := '0';
 
+  -- input record to the forward elimination module
   signal input_forward_elimination : input_elimination_reg_type;
+  -- input record to the elimination core
   signal input_elimination         : input_elimination_reg_type;
   signal input_last_division       : input_last_division_reg_type;
   -- index of the top bit of the even rows in data out from the BRAMs:
@@ -242,10 +241,10 @@ begin
       clk                        => clk,
       reset_n                    => reset_n,
       clk_en                     => clk_en,
-      input_elimination          => input_elimination,
+      input_forward_elimination  => input_forward_elimination,
       output_forward_elimination => output_forward_elim);
 
-  backward_elim_core_1 : entity work.backward_elim_core
+  elimination_core_1 : entity work.backward_elim_core
     port map (
       clk                  => clk,
       reset_n              => reset_n,
@@ -407,6 +406,20 @@ begin
         input_last_division.write_address_odd      <= r.write_address_odd;
       end if;
     end if;
+  end process;
+
+  control_inverse_output : process(r, data_out_brams_M_inv)
+  begin
+    case r.state_reg.state is
+      when STATE_OUTPUT_INVERSE_MATRIX =>
+        inverse_rows.valid_data       <= '1';
+        inverse_rows.address          <= r.counter_output_inverse_matrix;
+        inverse_rows.two_inverse_rows <= data_out_brams_M_inv;
+      when others =>
+        inverse_rows.valid_data       <= '0';
+        inverse_rows.address          <= 0;
+        inverse_rows.two_inverse_rows <= (others => '0');
+    end case;
   end process;
 
 
