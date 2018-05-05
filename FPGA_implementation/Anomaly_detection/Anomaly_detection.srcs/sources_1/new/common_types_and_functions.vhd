@@ -21,35 +21,26 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
---use IEEE.STD_LOGIC_ARITH.all;
 use ieee.numeric_std.all;
 
 library work;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 
 package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
   constant N_PIXELS                   : integer range 0 to 628864 := 628864;  -- 578 pixels per row * 1088 rows
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS                    : integer range 0 to 100    := 20;
+  constant P_BANDS                    : integer range 0 to 100    := 4;
   --constant P_BANDS : integer := 100;
   -- K is size of the kernel used in LRX. 
   constant K                          : integer;
   -- PIXEL_DATA_WIDTH is the width of the raw input data from the HSI
   constant PIXEL_DATA_WIDTH           : integer range 0 to 16     := 16;
-  constant NUMBER_OF_WRITES_PER_CYCLE : integer range 0 to 2      := 2;  
+  constant NUMBER_OF_WRITES_PER_CYCLE : integer range 0 to 2      := 2;
   constant BRAM_TDP_ADDRESS_WIDTH     : integer range 0 to 10     := 10;
   -- component generics
   constant B_RAM_SIZE                 : integer                   := 100;
--- Need to be 33 bit due to updating of two 32 bit variables. Is 33 bit necessary? Precision  question.
+-- Need to be 33 bit due to updating(adding) of two 32 bit variables. Is 33 bit necessary? Precision  question.
   constant B_RAM_BIT_WIDTH            : integer                   := 32;
   -- Time from issuing write in top-level inverse to data is possible to read
   -- from BRAM:
@@ -139,6 +130,13 @@ package Common_types_and_functions is
     read_address_even               : integer range 0 to P_BANDS/2-1;
     read_address_odd                : integer range 0 to P_BANDS/2-1;
     read_enable                     : std_logic;
+    best_approx                     : remainder_after_approximation_record;
+    msb_index                       : integer range 0 to 31;
+    index_i_two_cycles_ahead            : integer range 0 to P_BANDS-1;
+    index_j_two_cycles_ahead            : integer range 0 to P_BANDS-1;
+    read_address_row_i_two_cycles_ahead : integer range 0 to P_BANDS/2-1;
+    wait_counter                  : integer range 0 to 3;
+    flag_waiting_for_bram_update  : std_logic;
   end record;
   type inverse_top_level_reg_type is record
     row_j                                               : row_array;
@@ -160,7 +158,7 @@ package Common_types_and_functions is
     write_enable_even                                   : std_logic;  -- Remove?
     write_enable_odd                                    : std_logic;  -- Remove?
     read_enable                                         : std_logic;
-    writes_done_on_column                               : std_logic_vector(3 downto 0);  --should
+    writes_done_on_column                               : std_logic_vector(1 downto 0);  --should
     --be size log2(P_BANDS/2)downto 0. Need to edit the size manually if
     --changing P_BANDS.
     flag_first_data_elimination                         : std_logic;
@@ -201,42 +199,50 @@ package Common_types_and_functions is
   end record;
 
   type output_forward_elimination_reg_type is record
+    row_j                               : row_array;
+    row_i                               : row_array;
+    inv_row_j                           : row_array;
+    inv_row_i                           : row_array;
+    index_i                             : integer range 0 to P_BANDS -1;
+    index_j                             : integer range 0 to P_BANDS -1;
+    state_reg                           : reg_state_type;
+    r_addr_next                         : integer range 0 to P_BANDS/2-1;
+    write_address_even                  : integer range 0 to P_BANDS/2-1;
+    write_address_odd                   : integer range 0 to P_BANDS/2-1;
+    valid_data                          : std_logic;
+    flag_write_to_odd_row               : std_logic;  -- row_j might be on both odd and
+                                                      -- even rows.
+    flag_write_to_even_row              : std_logic;  -- sometimes its necessary to write
+                                                      -- both rows.
+    write_enable_even                   : std_logic;
+    write_enable_odd                    : std_logic;
+    flag_prev_row_i_at_odd_row          : std_logic;  --two cycles ahead 
+    read_address_even                   : integer range 0 to P_BANDS/2-1;
+    read_address_odd                    : integer range 0 to P_BANDS/2-1;
+    read_enable                         : std_logic;
+    forward_elimination_write_state     : forward_elimination_write_state_type;
+    flag_started_swapping_rows          : std_logic;  -- used in flip rows and forward elimination
+    wait_counter                        : integer range 0 to 3;
+    index_i_two_cycles_ahead            : integer range 0 to P_BANDS-1;
+    index_j_two_cycles_ahead            : integer range 0 to P_BANDS-1;
+    read_address_row_i_two_cycles_ahead : integer range 0 to P_BANDS/2-1;
+  end record;
+
+  type output_backward_elimination_reg_type is record
     new_row_j                       : row_array;
-    new_row_i                       : row_array;
     new_inv_row_j                   : row_array;
-    state_reg                       : reg_state_type;
     r_addr_next                     : integer range 0 to P_BANDS/2-1;
     write_address_even              : integer range 0 to P_BANDS/2-1;
     write_address_odd               : integer range 0 to P_BANDS/2-1;
     valid_data                      : std_logic;
+    state_reg                       : reg_state_type;
     flag_write_to_odd_row           : std_logic;  -- row_j might be on both odd and
                                                   -- even rows.
     flag_write_to_even_row          : std_logic;  -- sometimes its necessary to write
                                                   -- both rows.
     write_enable_even               : std_logic;
     write_enable_odd                : std_logic;
-    flag_prev_row_i_at_odd_row      : std_logic;  --two cycles ahead 
-    read_address_even               : integer range 0 to P_BANDS/2-1;
-    read_address_odd                : integer range 0 to P_BANDS/2-1;
-    read_enable                     : std_logic;
     forward_elimination_write_state : forward_elimination_write_state_type;
-    flag_started_swapping_rows      : std_logic;  -- used in flip rows and forward elimination
-  end record;
-
-  type output_backward_elimination_reg_type is record
-    new_row_j              : row_array;
-    new_inv_row_j          : row_array;
-    r_addr_next            : integer range 0 to P_BANDS/2-1;
-    write_address_even     : integer range 0 to P_BANDS/2-1;
-    write_address_odd      : integer range 0 to P_BANDS/2-1;
-    valid_data             : std_logic;
-    state_reg              : reg_state_type;
-    flag_write_to_odd_row  : std_logic;  -- row_j might be on both odd and
-                                         -- even rows.
-    flag_write_to_even_row : std_logic;  -- sometimes its necessary to write
-                                         -- both rows.
-    write_enable_even      : std_logic;
-    write_enable_odd       : std_logic;
   end record;
 
   type input_last_division_reg_type is record
@@ -263,20 +269,6 @@ package Common_types_and_functions is
     flag_write_to_even_row : std_logic;
     state_reg              : reg_state_type;
   end record;
-
-
---  constant C_STATE_REG_TYPE_INIT : reg_state_type := (
---    state                           => STATE_IDLE,
---    drive                           => STATE_IDLE_DRIVE,
---    fsm_start_signal                => IDLING,
---    inner_loop_iter_finished        => '0',
---    inner_loop_last_iter_finished   => '0',
---    start_inner_loop                => '0',
---    forward_elim_ctrl_signal        => IDLING,
---    forward_elim_state_signal       => IDLING,
---    flag_forward_core_started       => '0',
---    flag_forward_triangular_started => '0'
---    );
 
 
   function log2(i                    : natural) return integer;

@@ -94,24 +94,29 @@ begin
 
     v := r;
     if(input_last_division.state_reg.state = STATE_LAST_DIVISION and input_last_division.valid_data = '1' and remainder_valid = '1') then
-      v := input_last_division;
+      v             := input_last_division;
       v.best_approx := INITIAL_BEST_APPROX;
 
-      -- finde msb
+      -- find msb
+      if divisor_is_negative = '1' then
+        -- Need to negate the divisor before finding the msb
+        v.row_i(input_last_division.index_i) := not(v.row_i(input_last_division.index_i)) + ONE;
+      end if;
       for i in 0 to PIXEL_DATA_WIDTH*2-2 loop
-        if(input_last_division.row_i(input_last_division.index_i)(i) = '1') then
+        if(v.row_i(input_last_division.index_i)(i) = '1') then
           -- the first '1' found is the msb.
-          v.msb_index := i;
+          -- msb index is one-indexed
+          v.msb_index := i+1;
         end if;
       end loop;
 
 
 -- Finding closest approximation to divisor 
-      for j in 1 to PIXEL_DATA_WIDTH*2-2 loop
+      for j in 0 to PIXEL_DATA_WIDTH*2-2 loop
         if to_integer(unsigned(remainders(j))) < to_integer(unsigned(v.best_approx.remainder)) and (j <= v.msb_index) then
           -- This is a better approximation
           v.best_approx.remainder        := remainders(j);
-          v.best_approx.number_of_shifts := j;
+          v.best_approx.number_of_shifts := j+1;
         end if;
       end loop;
 

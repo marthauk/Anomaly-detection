@@ -176,8 +176,8 @@ begin
     r_in                                        <= v;
     -- This module needs to write 
 --  output_forward_elimination
-    output_swap_rows.new_row_j                  <= r.row_j;
-    output_swap_rows.new_row_i                  <= r.row_i;
+    output_swap_rows.row_j                  <= r.row_j;
+    output_swap_rows.row_i                  <= r.row_i;
     output_swap_rows.read_address_odd           <= r.read_address_odd;
     output_swap_rows.read_address_even          <= r.read_address_even;
     output_swap_rows.flag_write_to_odd_row      <= r.flag_write_to_odd_row;

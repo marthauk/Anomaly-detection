@@ -52,7 +52,7 @@ architecture Behavioral of inverse_matrix_tb is
   signal din     : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
   signal writes_done_on_column : std_logic_vector(log2(P_BANDS/2) downto
                                                   0);
-  signal inverse_rows : signed(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+  signal inverse_rows : inverse_output_reg_type;
   -- Testbench Internal Signals
   -----------------------------------------------------------------------------
 
