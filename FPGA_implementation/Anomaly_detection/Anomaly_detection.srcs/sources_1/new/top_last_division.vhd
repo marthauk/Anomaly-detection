@@ -88,30 +88,6 @@ begin
     remainder_valid <= remainder_after_approximation_i.remainder_valid;
   end generate;
 
-  -- Getting latches for msb_index when synthesizing this process. T
-  -- process(divisor_is_negative, divisor_valid, input_last_division)
-  --   variable v : input_last_division_reg_type;
-  -- begin
-  --   if divisor_valid = '1' then
-  --     if divisor_is_negative = '1' then
-  --       -- Need to negate the divisor before finding the msb
-  --       v.row_i(input_last_division.index_i) := not(input_last_division.row_i(input_last_division.index_i)) + ONE;
-  --     end if;
-  --     for i in 0 to PIXEL_DATA_WIDTH*2-2 loop
-  --       if(v.row_i(input_last_division.index_i)(i) = '1') then
-  --         -- the last '1' found is the msb.
-  --         -- msb index is one-indexed
-  --         v.msb_index := i+1;
-  --       end if;
-  --     end loop;
-  --     msb_index <= v.msb_index;
-  --     msb_valid <= '1';
-  --   else
-  --     msb_index <= 0;
-  --     msb_valid <= '0';
-  --   end if;
-
-  -- end process;
 
   find_msb : process(divisor_valid, input_last_division, reset_n,divisor)
   begin

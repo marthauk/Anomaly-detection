@@ -29,6 +29,8 @@ architecture Behavioral of backward_elim_core is
   signal remainders          : remainders_array;
   constant ONE               : signed(PIXEL_DATA_WIDTH*2-1 downto 0) := (0 => '1', others => '0');
   -- to be used in two's complement.
+  signal msb_index           : integer range 0 to 31;  -- msb of the divisor(unsigned)
+  signal msb_valid           : std_logic                             := '0';
 
   constant INITIAL_BEST_APPROX : remainder_after_approximation_record := (
     remainder        => (PIXEL_DATA_WIDTH*2-1 => '0', others => '1'),
@@ -86,7 +88,83 @@ begin
     remainder_valid <= remainder_after_approximation_i.remainder_valid;
   end generate;
 
-  comb_process : process(input_backward_elim, r, reset_n)
+  find_msb : process(divisor_valid, input_backward_elim, reset_n,divisor)
+  begin
+    if divisor_valid = '1' and reset_n = '1' then
+      --For PIXEL_DATA_WIDTH = 16.
+      if divisor(30) = '1' then
+        msb_index <= 30;
+      elsif divisor(29) = '1' then
+        msb_index <= 29;
+      elsif divisor(28) = '1' then
+        msb_index <= 28;
+      elsif divisor(27) = '1' then
+        msb_index <= 27;
+      elsif divisor(26) = '1'then
+        msb_index <= 26;
+      elsif divisor(25) = '1' then
+        msb_index <= 25;
+      elsif divisor(24) = '1' then
+        msb_index <= 24;
+      elsif divisor(23) = '1' then
+        msb_index <= 23;
+      elsif divisor(22) = '1' then
+        msb_index <= 22;
+      elsif divisor(21) = '1' then
+        msb_index <= 21;
+      elsif divisor(20) = '1' then
+        msb_index <= 20;
+      elsif divisor(19) = '1' then
+        msb_index <= 19;
+      elsif divisor(18) = '1' then
+        msb_index <= 18;
+      elsif divisor(17) = '1'then
+        msb_index <= 17;
+      elsif divisor(16) = '1' then
+        msb_index <= 16;
+      elsif divisor(15) = '1' then
+        msb_index <= 15;
+      elsif divisor(14) = '1' then
+        msb_index <= 14;
+      elsif divisor(13) = '1' then
+        msb_index <= 13;
+      elsif divisor(12) = '1' then
+        msb_index <= 12;
+      elsif divisor(11) = '1' then
+        msb_index <= 11;
+      elsif divisor(10) = '1'then
+        msb_index <= 10;
+      elsif divisor(9) = '1' then
+        msb_index <= 9;
+      elsif divisor(8) = '1' then
+        msb_index <= 8;
+      elsif divisor(7) = '1' then
+        msb_index <= 7;
+      elsif divisor(6) = '1' then
+        msb_index <= 6;
+      elsif divisor(5) = '1' then
+        msb_index <= 5;
+      elsif divisor(4) = '1' then
+        msb_index <= 4;
+      elsif divisor(3) = '1' then
+        msb_index <= 3;
+      elsif divisor(2) = '1' then
+        msb_index <= 2;
+      elsif divisor(1) = '1' then
+        msb_index <= 1;
+      elsif divisor(0) = '1' then
+        msb_index <= 0;
+      end if;
+      msb_valid <= '1';
+    else
+      msb_index <= 0;
+      msb_valid <= '0';
+    end if;
+  end process;
+
+
+        
+  comb_process : process(input_backward_elim, r, reset_n, remainder_valid, msb_valid)
     variable v             : input_elimination_reg_type;
     variable r_j_i         : integer;
     variable r_i_i         : integer;
@@ -97,7 +175,7 @@ begin
   begin
     v := r;
 
-    if((input_backward_elim.state_reg.state = STATE_BACKWARD_ELIMINATION or input_backward_elim.state_reg.state= STATE_FORWARD_ELIMINATION) and input_backward_elim.valid_data = '1' and remainder_valid = '1') then
+    if((input_backward_elim.state_reg.state = STATE_BACKWARD_ELIMINATION or input_backward_elim.state_reg.state= STATE_FORWARD_ELIMINATION) and input_backward_elim.valid_data = '1' and remainder_valid = '1' and msb_valid ='1') then
       -- Load data set index_j
       v.row_j     := input_backward_elim.row_j;
       v.row_i     := input_backward_elim.row_i;
@@ -110,23 +188,9 @@ begin
         -- Finding the best approx for the divisor A[i][i] only need to be done
         -- once per index i. Currently the design is doing it for each iteration
         v.best_approx := INITIAL_BEST_APPROX;
-
-        -- find msb
-        if divisor_is_negative = '1' then
-          -- Need to negate the divisor before finding the msb
-          v.row_i(input_backward_elim.index_i) := not(v.row_i(input_backward_elim.index_i)) + ONE;
-        end if;
-        for i in 0 to PIXEL_DATA_WIDTH*2-2 loop
-          if(v.row_i(input_backward_elim.index_i)(i) = '1') then
-            -- the first '1' found is the msb.
-            -- msb index is one-indexed
-            v.msb_index := i+1;
-          end if;
-        end loop;
-
 -- Finding closest approximation to divisor 
         for j in 0 to PIXEL_DATA_WIDTH*2-2 loop
-          if to_integer(unsigned(remainders(j))) < to_integer(unsigned(v.best_approx.remainder)) and (j <= v.msb_index) then
+          if to_integer(unsigned(remainders(j))) < to_integer(unsigned(v.best_approx.remainder)) and (j <= msb_index) then
             -- This is a better approximation
             v.best_approx.remainder        := remainders(j);
             v.best_approx.number_of_shifts := j;
@@ -150,17 +214,11 @@ begin
           -- The r_i_i_halv is added to get a better approximation when
           -- dividing. This is done because of integer math.
           temp          := to_integer(shift_right(to_signed(temp, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts));
-          --if(r_i_i > 0 or r_i_i < 0) then
-          --  temp := temp/r_i_i;
-          --end if;
           v.row_j(i)    := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-temp, 32);
 
           inner_product  := to_integer(input_backward_elim.inv_row_i(i))*r_j_i;
           temp           := (inner_product+r_i_i_halv);
           temp           := to_integer(shift_right(to_signed(temp, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts));
-          --if(r_i_i > 0 or r_i_i < 0) then
-          --  temp := temp/r_i_i;
-          --end if;
           v.inv_row_j(i) := to_signed(to_integer(input_backward_elim.inv_row_j(i))-temp, 32);
         end loop;
         -- Control signals --
@@ -177,6 +235,7 @@ begin
     if(reset_n = '0') then
       v.index_i := P_BANDS-1;
       v.index_j := P_BANDS-2;
+      v.valid_data :='0';
     end if;
     r_in                                                 <= v;
     -- data

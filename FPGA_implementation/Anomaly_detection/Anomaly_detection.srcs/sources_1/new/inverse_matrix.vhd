@@ -214,10 +214,10 @@ begin
       elsif r.state_reg.state = STATE_FORWARD_ELIMINATION then
         if output_forward_elim.forward_elimination_write_state = SWAP_ROWS and output_forward_elim.valid_data = '1' then
         -- do nothing actually
-        elsif output_backward_elim.forward_elimination_write_state = EVEN_j_WRITE and output_backward_elim.flag_write_to_even_row = '1' and output_backward_elim.valid_data = '1' then
+        elsif output_backward_elim.flag_write_to_even_row = '1' and output_backward_elim.valid_data = '1' then
           -- row_j is at even row
           inv_data_in_even_i <= std_logic_vector(output_backward_elim.new_inv_row_j(i));
-        elsif output_backward_elim.forward_elimination_write_state = ODD_j_WRITE and output_backward_elim.flag_write_to_odd_row = '1' and output_backward_elim.valid_data = '1' then
+        elsif  output_backward_elim.flag_write_to_odd_row = '1' and output_backward_elim.valid_data = '1' then
           -- row_j is at odd row
           inv_data_in_odd_i <= std_logic_vector(output_backward_elim.new_inv_row_j(i));
         end if;
@@ -258,6 +258,7 @@ begin
       input_forward_elimination  => input_forward_elimination,
       output_forward_elimination => output_forward_elim);
 
+--backward_elim_core is used by both forward_elimination and backward_elimination.
   elimination_core_1 : entity work.backward_elim_core
     port map (
       clk                  => clk,
@@ -312,10 +313,10 @@ begin
       elsif output_backward_elim.forward_elimination_write_state = EVEN_j_WRITE or output_backward_elim.forward_elimination_write_state = ODD_j_WRITE then
         write_address_even    <= output_backward_elim.write_address_even;
         write_address_odd     <= output_backward_elim.write_address_odd;
-        write_enable_even     <= output_forward_elim.flag_write_to_even_row;
-        write_enable_odd      <= output_forward_elim.flag_write_to_odd_row;
-        write_enable_inv_even <= output_forward_elim.flag_write_to_even_row;
-        write_enable_inv_odd  <= output_forward_elim.flag_write_to_odd_row;
+        write_enable_even     <= output_backward_elim.flag_write_to_even_row;
+        write_enable_odd      <= output_backward_elim.flag_write_to_odd_row;
+        write_enable_inv_even <= output_backward_elim.flag_write_to_even_row;
+        write_enable_inv_odd  <= output_backward_elim.flag_write_to_odd_row;
       else
         write_enable_even     <= '0';
         write_enable_odd      <= '0';
@@ -399,7 +400,8 @@ begin
           input_forward_elimination.inv_row_odd(i)  <= signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
         end loop;
 
-        if (output_forward_elim.forward_elimination_write_state = EVEN_j_WRITE or output_forward_elim.forward_elimination_write_state = ODD_j_WRITE) and output_forward_elim.valid_data = '1' then
+        --if (output_forward_elim.forward_elimination_write_state = EVEN_j_WRITE or output_forward_elim.forward_elimination_write_state = ODD_j_WRITE) and output_forward_elim.valid_data = '1' then
+        if not(output_forward_elim.forward_elimination_write_state = SWAP_ROWS) and output_forward_elim.valid_data = '1' then
           -- USE the same elimination-core as backward elimination
           -- set inputs to forward elimination
           input_elimination.row_j                           <= output_forward_elim.row_j;
@@ -752,7 +754,7 @@ begin
                   v.read_address_even        := r.read_address_odd;
                   v.index_j_two_cycles_ahead := r.index_j_two_cycles_ahead-1;
                 elsif v.index_j < 2 then
-                  -- new i or finished, update
+                  -- new i or finished all necessary reads, update
                   if v.index_i >= 2 then
                     v.index_i_two_cycles_ahead := r.index_i_two_cycles_ahead-1;
                     v.index_j_two_cycles_ahead := r.index_i_two_cycles_ahead-2;

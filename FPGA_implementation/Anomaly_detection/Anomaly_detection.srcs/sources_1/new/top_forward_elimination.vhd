@@ -112,6 +112,7 @@ begin
             v.write_address_even                  := 0;
             v.write_address_odd                   := 0;
             v.valid_data                          := '0';
+            v.flag_first_data_elimination         := '0';
             -- First iteration row_i is located at even index=0
             v.row_i                               := input_forward_elimination.row_even;
             v.row_j                               := input_forward_elimination.row_odd;
@@ -122,12 +123,17 @@ begin
             v.wait_counter                        := 0;
             v.flag_waiting_for_bram_update        := '0';
           else
-            v.valid_data                          := '0';
-            v.index_i                      := r.index_i - 1;
-            v.index_j                      := r.index_i - 2;
-            v.flag_write_to_odd_row        := not(r.flag_write_to_odd_row);
-            v.flag_write_to_even_row       := not(r.flag_write_to_even_row);
-            v.flag_prev_row_i_at_odd_row   := not(r.flag_prev_row_i_at_odd_row);
+            v.valid_data := '0';
+            v.index_i    := r.index_i + 1;
+            v.index_j    := r.index_i + 2;
+            -- flag_prev_row_i_at_odd_row set by EVEN_j_WRITE
+            if r.flag_prev_row_i_at_odd_row = '1' then
+              v.flag_write_to_odd_row  := '0';
+              v.flag_write_to_even_row := '1';
+            else
+              v.flag_write_to_odd_row  := '1';
+              v.flag_write_to_even_row := '0';
+            end if;
             v.wait_counter                 := 0;
             v.flag_waiting_for_bram_update := '0';
             if v.flag_write_to_even_row = '1' then
@@ -135,8 +141,8 @@ begin
               -- address row i?
               v.address_row_i      := r.address_row_i;
               v.address_row_j      := r.address_row_i+1;
-              v.write_address_even := r.write_address_even +1;
-              v.write_address_odd  := r.write_address_odd;
+              v.write_address_even := r.address_row_i +1;
+              v.write_address_odd  := r.address_row_i +1;
               v.row_i              := input_forward_elimination.row_odd;
               v.row_j              := input_forward_elimination.row_even;
               v.inv_row_i          := input_forward_elimination.inv_row_odd;
@@ -154,10 +160,6 @@ begin
             end if;
           end if;
           if v.row_i(v.index_i) = 0 then
-            -- issue correct read address
-            --v.read_address_even :=
-            --v.read_address_odd :=
-            -- v address row_j
             v.forward_elimination_write_state := SWAP_ROWS;
             v.flag_start_swapping_rows        := '1';
             -- insecure about the reading process here...
@@ -193,10 +195,8 @@ begin
           end if;
         when EVEN_j_WRITE =>
           -- Need to check if i two cycles forward is at new place..
-          --when writing to BRAM,in inverse-module, check that write_state is
-          --either EVEN_j_Write or ODD_j_write and write_flag is high.
           if r.flag_waiting_for_bram_update = '0' then
-            v.valid_data :='1';
+            v.valid_data             := '1';
             v.flag_write_to_even_row := '1';
             v.flag_write_to_odd_row  := '0';
             v.valid_data             := '1';
@@ -208,9 +208,14 @@ begin
               v.write_address_even := r.write_address_even+1;
               v.write_address_odd  := r.write_address_odd +1;
             end if;
+            if v.index_j >= P_BANDS-2 then
+              v.index_i_two_cycles_ahead := r.index_i+1;
+              v.index_j_two_cycles_ahead := r.index_i+2;
+            end if;
           end if;
 
-          if v.index_j >= P_BANDS-2 and r.index_i_two_cycles_ahead -v.index_j < B_RAM_WAIT_CLK_CYCLES and r.wait_counter < B_RAM_WAIT_CLK_CYCLES-(r.index_i_two_cycles_ahead -v.index_j) then
+
+          if v.index_j >= P_BANDS-2 and v.index_j -v.index_i_two_cycles_ahead < B_RAM_WAIT_CLK_CYCLES and r.wait_counter < B_RAM_WAIT_CLK_CYCLES-(v.index_j-v.index_i_two_cycles_ahead) then
             -- Need to wait for the row to update before reading it
             v.wait_counter                 := r.wait_counter+1;
             v.flag_waiting_for_bram_update := '1';
@@ -226,11 +231,11 @@ begin
               v.read_address_even        := r.read_address_even+1;
               v.read_address_odd         := r.read_address_odd +1;
               v.index_j_two_cycles_ahead := r.index_j_two_cycles_ahead +1;
-            elsif v.index_j > P_BANDS-3 then
+            elsif v.index_j >= P_BANDS-3 then
               -- new i, update
               if r.index_i_two_cycles_ahead <= P_BANDS-3 then
-                v.index_i_two_cycles_ahead := r.index_i_two_cycles_ahead+1;
-                v.index_j_two_cycles_ahead := r.index_i_two_cycles_ahead+2;
+                --v.index_i_two_cycles_ahead := r.index_i_two_cycles_ahead+1;
+                --v.index_j_two_cycles_ahead := r.index_i_two_cycles_ahead+2;
                 if r.flag_prev_row_i_at_odd_row = '1' then
                   --next row i will be located in an even indexed row
                   v.read_address_even                   := r.address_row_i+1;
@@ -239,8 +244,9 @@ begin
                   v.flag_prev_row_i_at_odd_row          := '0';
                 else
                   -- next row i will be located in an odd indexed row
+                  -- Row even will be located at an address one increment ahead
                   v.read_address_odd                    := r.read_address_row_i_two_cycles_ahead;
-                  v.read_address_even                   := r.read_address_row_i_two_cycles_ahead;
+                  v.read_address_even                   := r.read_address_row_i_two_cycles_ahead+1;
                   v.read_address_row_i_two_cycles_ahead := r.read_address_row_i_two_cycles_ahead;
                   v.flag_prev_row_i_at_odd_row          := '1';
                 end if;
@@ -252,7 +258,7 @@ begin
         when ODD_j_WRITE =>
           -- Need to check if i two cycles forward is at new place..
           if r.flag_waiting_for_bram_update = '0' then
-            v.valid_data :='1';
+            v.valid_data             := '1';
             v.flag_write_to_even_row := '0';
             v.flag_write_to_odd_row  := '1';
             v.valid_data             := '1';
@@ -264,7 +270,7 @@ begin
             v.write_address_odd      := r.write_address_odd;
           end if;
 
-          if v.index_j >= P_BANDS-1 and r.index_i_two_cycles_ahead -v.index_j < B_RAM_WAIT_CLK_CYCLES and r.wait_counter < B_RAM_WAIT_CLK_CYCLES-(r.index_i_two_cycles_ahead -v.index_j) then
+          if v.index_j >= P_BANDS-1 and v.index_j-r.index_i_two_cycles_ahead < B_RAM_WAIT_CLK_CYCLES and r.wait_counter < B_RAM_WAIT_CLK_CYCLES-(v.index_j-r.index_i_two_cycles_ahead) then
             -- Need to wait for the row to update before reading it
             v.wait_counter                 := r.wait_counter+1;
             v.flag_waiting_for_bram_update := '1';
@@ -279,30 +285,26 @@ begin
               v.forward_elimination_write_state := CHECK_DIAGONAL_ELEMENT_IS_ZERO;
             end if;
             -- read new data. Data need to be read two clock cycles in advance 
-            if(r.read_address_odd <= P_BANDS/2-1 and r.index_j_two_cycles_ahead <= P_BANDS-1) then
+            if(r.read_address_odd <= P_BANDS/2-1 and r.index_j_two_cycles_ahead <= P_BANDS-1 and v.index_j < P_BANDS-1) then
               -- need to read an odd row
               v.read_address_even        := r.read_address_even;
               v.read_address_odd         := r.read_address_odd;
               v.index_j_two_cycles_ahead := r.index_j_two_cycles_ahead +1;
-            elsif v.index_j > P_BANDS-3 then
-              -- new i, update
-              if r.index_i_two_cycles_ahead <= P_BANDS-3 then
-                v.index_i_two_cycles_ahead := r.index_i_two_cycles_ahead+1;
-                v.index_j_two_cycles_ahead := r.index_i_two_cycles_ahead+2;
-                if r.flag_prev_row_i_at_odd_row = '1' then
-                  --next row i will be located in an even indexed row
-                  v.read_address_even                   := r.address_row_i+1;
-                  v.read_address_odd                    := r.address_row_i+1;
-                  v.read_address_row_i_two_cycles_ahead := r.read_address_row_i_two_cycles_ahead+1;
-                  v.flag_prev_row_i_at_odd_row          := '0';
-                else
-                  -- next row i will be located in an odd indexed row
-                  v.read_address_odd                    := r.read_address_row_i_two_cycles_ahead;
-                  v.read_address_even                   := r.read_address_row_i_two_cycles_ahead;
-                  v.read_address_row_i_two_cycles_ahead := r.read_address_row_i_two_cycles_ahead;
-                  v.flag_prev_row_i_at_odd_row          := '1';
-                end if;
-              end if;
+            elsif v.index_j >= P_BANDS-1 then
+              -- In the previous clock cycle a new index i was read 
+              v.read_address_even        := r.read_address_even;
+              v.read_address_odd         := r.read_address_odd;
+              v.index_j_two_cycles_ahead := r.index_j_two_cycles_ahead +1;
+
+            --  if r.flag_prev_row_i_at_odd_row = '1' then
+            --    v.read_address_even        := r.read_address_even;
+            --    v.read_address_odd         := r.read_address_even;
+            --    v.index_j_two_cycles_ahead := r.index_j_two_cycles_ahead +1;
+            --  else
+            --    v.read_address_even        := r.read_address_even;
+            --    v.read_address_odd         := r.read_address_odd;
+            --    v.index_j_two_cycles_ahead := r.index_j_two_cycles_ahead +1;
+            --   end if;
             end if;
           end if;
         when others =>
