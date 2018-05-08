@@ -25,7 +25,6 @@ begin
     if(rising_edge(clk)) then
       if(write_enable = '1') then
         b_ram_data(write_address) <= data_in;
-        --b_ram_data(count_i) <= data_in;
       end if;
     end if;
   end process;
