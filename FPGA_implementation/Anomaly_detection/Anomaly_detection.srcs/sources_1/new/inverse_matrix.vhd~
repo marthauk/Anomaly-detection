@@ -310,7 +310,7 @@ begin
         write_enable_odd      <= output_forward_elim.flag_write_to_odd_row;
         write_enable_inv_even <= '0';
         write_enable_inv_odd  <= '0';
-      elsif output_backward_elim.state_reg.state = STATE_FORWARD_ELIMINATION and output_backward_elim.valid_data ='1' then
+      elsif output_backward_elim.forward_elimination_write_state = EVEN_j_WRITE or output_backward_elim.forward_elimination_write_state = ODD_j_WRITE then
         write_address_even    <= output_backward_elim.write_address_even;
         write_address_odd     <= output_backward_elim.write_address_odd;
         write_enable_even     <= output_backward_elim.flag_write_to_even_row;

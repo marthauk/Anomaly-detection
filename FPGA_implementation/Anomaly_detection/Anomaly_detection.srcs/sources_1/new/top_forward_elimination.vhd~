@@ -125,8 +125,7 @@ begin
           else
             v.valid_data := '0';
             v.index_i    := r.index_i + 1;
-            -- Set v.index_j to be the same as v.index i as index_j gets updated in EVEN_j_WRITE and ODD_j_WRITE anyways
-            v.index_j    := r.index_i + 1;
+            v.index_j    := r.index_i + 2;
             -- flag_prev_row_i_at_odd_row set by EVEN_j_WRITE
             if r.flag_prev_row_i_at_odd_row = '1' then
               v.flag_write_to_odd_row  := '0';
@@ -142,9 +141,8 @@ begin
               -- address row i?
               v.address_row_i      := r.address_row_i;
               v.address_row_j      := r.address_row_i+1;
-              -- write address is changed in EVEN_j_WRITE before writing
-              v.write_address_even := r.address_row_i;
-              v.write_address_odd  := r.address_row_i;
+              v.write_address_even := r.address_row_i +1;
+              v.write_address_odd  := r.address_row_i +1;
               v.row_i              := input_forward_elimination.row_odd;
               v.row_j              := input_forward_elimination.row_even;
               v.inv_row_i          := input_forward_elimination.inv_row_odd;
