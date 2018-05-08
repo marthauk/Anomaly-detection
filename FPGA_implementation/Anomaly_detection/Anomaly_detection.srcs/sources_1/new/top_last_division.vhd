@@ -164,7 +164,7 @@ begin
   end process;
 
 
-  comb_process : process(input_last_division, r, reset_n, divisor_is_negative, divisor, remainder_valid, remainders,msb_valid)
+  comb_process : process(input_last_division, r, reset_n, divisor_is_negative, divisor, remainder_valid, remainders,msb_valid, divisor)
     variable v : input_last_division_reg_type;
   begin
 

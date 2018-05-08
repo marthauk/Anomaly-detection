@@ -122,12 +122,21 @@ begin
             v.flag_prev_row_i_at_odd_row          := '0';
             v.wait_counter                        := 0;
             v.flag_waiting_for_bram_update        := '0';
+          elsif r.index_i >=P_BANDS-2 and r.index_j >= P_BANDS-3 then
+            -- Forward elimination is finished.
+            v.valid_data :='0';
+            v.flag_write_to_odd_row :='0';
+            v.flag_write_to_even_row :='0';
+            v.read_address_even := P_BANDS/2-1;
+            v.read_address_even := P_BANDS/2-1;
           else
             v.valid_data := '0';
             v.index_i    := r.index_i + 1;
             -- Set v.index_j to be the same as v.index i as index_j gets updated in EVEN_j_WRITE and ODD_j_WRITE anyways
             v.index_j    := r.index_i + 1;
             -- flag_prev_row_i_at_odd_row set by EVEN_j_WRITE
+            -- or if previous index_j = P_BANDS-1 and index_i= P_BANDS-3, then
+            -- it was set by ODD_j_WRITE
             if r.flag_prev_row_i_at_odd_row = '1' then
               v.flag_write_to_odd_row  := '0';
               v.flag_write_to_even_row := '1';
@@ -284,6 +293,11 @@ begin
               v.forward_elimination_write_state := EVEN_j_WRITE;
             else
               --New iteration of the outermost loop
+              if v.index_j = P_BANDS-1 and v.index_i= P_BANDS-3 then
+                -- The last row_i of the forward elimination is located at an
+                -- even indexed row.
+                v.flag_prev_row_i_at_odd_row := '0';
+                end if;
               v.forward_elimination_write_state := CHECK_DIAGONAL_ELEMENT_IS_ZERO;
             end if;
             -- read new data. Data need to be read two clock cycles in advance 

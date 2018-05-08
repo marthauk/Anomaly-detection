@@ -164,7 +164,7 @@ begin
 
 
         
-  comb_process : process(input_backward_elim, r, reset_n, remainder_valid, msb_valid)
+  comb_process : process(input_backward_elim, r, reset_n, remainder_valid, msb_valid,divisor)
     variable v             : input_elimination_reg_type;
     variable r_j_i         : integer;
     variable r_i_i         : integer;
