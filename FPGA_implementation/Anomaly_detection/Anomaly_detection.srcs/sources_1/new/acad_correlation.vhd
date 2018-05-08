@@ -16,6 +16,7 @@ entity acad_correlation is
        reset_n            : in    std_logic;
        dout               : inout std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto
                                      0);  -- writing two 32-bit elements per cycle
+       valid_out : out std_logic;
        writes_done_on_row : out   std_logic_vector(log2(P_BANDS/2) downto 0)
        );
 end acad_correlation;
@@ -54,7 +55,7 @@ begin
 
 
   gen_BRAM_18_updates : for i in 0 to P_BANDS-1 generate
-    -- Generating N_BRAMS = P_BANDS BRAMS.
+    -- Generating N_BRAMS = P_BANDS BRAM 36 kbits.
     signal data_in_even_i, data_in_odd_i, data_out_even_i, data_out_odd_i : std_logic_vector(B_RAM_BIT_WIDTH -1 downto 0);
 --value read from BRAM (odd index) before writing to address
   begin
@@ -223,6 +224,9 @@ begin
         -- New pixel coming on data_in input
         -- Assuming consequent pixels are hold valid, starting working on
         -- next pixel next cycle;
+        if(flag_first_pixel ='0') then
+        	valid_out<='1'; -- data outputted from correlation module will always "lag" one pixel
+        	end if;
         r_write_address      <= 0;
         r_read_address       <= 0;
         read_address         <= 0;
