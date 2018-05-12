@@ -16,244 +16,80 @@ end top_last_division;
 architecture Behavioral of top_last_division is
 
   signal r, r_in                         : input_last_division_reg_type;
--- number of shifts required to approximate the division
-  signal divisor_is_negative             : std_logic;
-  -- If the divisor is negative, we need to take two's complement of the divisor
-  signal divisor                         : std_logic_vector(PIXEL_DATA_WIDTH*2 -1 downto 0);
-  signal divisor_valid                   : std_logic                               := '0';
-  signal remainder_valid                 : std_logic                               := '0';
-  type remainders_array is array(0 to PIXEL_DATA_WIDTH*2-2) of std_logic_vector(PIXEL_DATA_WIDTH*2-1 downto 0);
-  signal remainders                      : remainders_array;
-  signal msb_index                       : integer range 0 to 31;  -- msb of the divisor(unsigned)
-  signal msb_valid                       : std_logic                               := '0';
   constant PRECISION_SHIFT_LAST_DIVISION : integer range 0 to PIXEL_DATA_WIDTH*2 := PIXEL_DATA_WIDTH*2-2;
-  constant ONE                           : signed(PIXEL_DATA_WIDTH*2-1 downto 0)   := (0 => '1', others => '0');
-  -- to be used in two's complement.
-
-  constant INITIAL_BEST_APPROX : remainder_after_approximation_record := (
-    remainder        => (PIXEL_DATA_WIDTH*2-1 => '0', others => '1'),
-    number_of_shifts => 0,
-    remainder_valid  => '0'
-    );
+  constant ONE                           : signed(PIXEL_DATA_WIDTH*2-1 downto 0) := (0 => '1', others => '0');
+  constant DIVISION_FACTOR : integer range 0 to 31:= 27;
+  constant MULTIPLICATION_FACTOR : integer range 0 to 31 := 20;
 
 begin
 
-  --check_if_divisor_is_negative : process(input_last_division.state_reg.state, input_last_division.row_i, input_last_division.valid_data, reset_n)
-  --begin
-  --  if reset_n = '0' or not(input_last_division.state_reg.state = STATE_LAST_DIVISION) then
-  --    divisor_valid       <= '0';
-  --    divisor_is_negative <= '0';
-  --    divisor             <= std_logic_vector(to_signed(1, PIXEL_DATA_WIDTH*2));
-  --  elsif(input_last_division.row_i(input_last_division.index_i)(PIXEL_DATA_WIDTH*2-1) = '1' and input_last_division.valid_data = '1') then
-  --    -- row[i][i] is negative
-  --    -- using the absolute value
-  --    divisor_is_negative <= '1';
-  --    divisor             <= std_logic_vector(abs(signed(input_last_division.row_i(input_last_division.index_i))));
-  --    divisor_valid       <= '1';
-  --  elsif input_last_division.row_i(input_last_division.index_i)(PIXEL_DATA_WIDTH*2-1) = '0' and input_last_division.valid_data = '1' then
-  --    divisor_is_negative <= '0';
-  --    divisor             <= std_logic_vector(input_last_division.row_i(input_last_division.index_i));
-  --    divisor_valid       <= '1';
-  --  else
-  --    divisor_valid       <= '0';
-  --    divisor_is_negative <= '0';
-  --    divisor             <= std_logic_vector(to_signed(1, PIXEL_DATA_WIDTH*2));
-  --  end if;
-  --end process;
-
-
----- generate PIXEL_DATA_WIDTH*2-1 number of shifters that shifts
----- A[i][i] n places in order to see how many shifts yield the best
----- approximation to the division. Don't need to shift the
----- 31 bit as this is the sign bit.
-  --generate_shifters : for i in 1 to PIXEL_DATA_WIDTH*2-1 generate
-  --  signal remainder_after_approximation_i : remainder_after_approximation_record;
-  --begin
-  --  process(divisor, divisor_valid, reset_n, input_last_division.state_reg)
-  --  begin
-  --    if reset_n = '0' or not(input_last_division.state_reg.state = STATE_LAST_DIVISION) then
-  --      remainder_after_approximation_i.remainder        <= std_logic_vector(shift_right(signed(divisor), i));
-  --      remainder_after_approximation_i.number_of_shifts <= i;
-  --      remainder_after_approximation_i.remainder_valid  <= '0';
-  --    elsif divisor_valid = '1' then
-  --      remainder_after_approximation_i.remainder        <= std_logic_vector(shift_right(signed(divisor), i));
-  --      remainder_after_approximation_i.number_of_shifts <= i;
-  --      remainder_after_approximation_i.remainder_valid  <= '1';
-  --    else
-  --      remainder_after_approximation_i.remainder        <= std_logic_vector(shift_right(signed(divisor), i));
-  --      remainder_after_approximation_i.number_of_shifts <= i;
-  --      remainder_after_approximation_i.remainder_valid  <= '0';
-  --    end if;
-  --  end process;
-  --  remainders(i-1) <= remainder_after_approximation_i.remainder;
-  --  remainder_valid <= remainder_after_approximation_i.remainder_valid;
-  --end generate;
-
-
-  --find_msb : process(divisor_valid, input_last_division, reset_n,divisor)
-  --begin
-  --  if divisor_valid = '1' and reset_n = '1' then
-  --    --For PIXEL_DATA_WIDTH = 16.
-  --    if divisor(30) = '1' then
-  --      msb_index <= 30;
-  --    elsif divisor(29) = '1' then
-  --      msb_index <= 29;
-  --    elsif divisor(28) = '1' then
-  --      msb_index <= 28;
-  --    elsif divisor(27) = '1' then
-  --      msb_index <= 27;
-  --    elsif divisor(26) = '1'then
-  --      msb_index <= 26;
-  --    elsif divisor(25) = '1' then
-  --      msb_index <= 25;
-  --    elsif divisor(24) = '1' then
-  --      msb_index <= 24;
-  --    elsif divisor(23) = '1' then
-  --      msb_index <= 23;
-  --    elsif divisor(22) = '1' then
-  --      msb_index <= 22;
-  --    elsif divisor(21) = '1' then
-  --      msb_index <= 21;
-  --    elsif divisor(20) = '1' then
-  --      msb_index <= 20;
-  --    elsif divisor(19) = '1' then
-  --      msb_index <= 19;
-  --    elsif divisor(18) = '1' then
-  --      msb_index <= 18;
-  --    elsif divisor(17) = '1'then
-  --      msb_index <= 17;
-  --    elsif divisor(16) = '1' then
-  --      msb_index <= 16;
-  --    elsif divisor(15) = '1' then
-  --      msb_index <= 15;
-  --    elsif divisor(14) = '1' then
-  --      msb_index <= 14;
-  --    elsif divisor(13) = '1' then
-  --      msb_index <= 13;
-  --    elsif divisor(12) = '1' then
-  --      msb_index <= 12;
-  --    elsif divisor(11) = '1' then
-  --      msb_index <= 11;
-  --    elsif divisor(10) = '1'then
-  --      msb_index <= 10;
-  --    elsif divisor(9) = '1' then
-  --      msb_index <= 9;
-  --    elsif divisor(8) = '1' then
-  --      msb_index <= 8;
-  --    elsif divisor(7) = '1' then
-  --      msb_index <= 7;
-  --    elsif divisor(6) = '1' then
-  --      msb_index <= 6;
-  --    elsif divisor(5) = '1' then
-  --      msb_index <= 5;
-  --    elsif divisor(4) = '1' then
-  --      msb_index <= 4;
-  --    elsif divisor(3) = '1' then
-  --      msb_index <= 3;
-  --    elsif divisor(2) = '1' then
-  --      msb_index <= 2;
-  --    elsif divisor(1) = '1' then
-  --      msb_index <= 1;
-  --    elsif divisor(0) = '1' then
-  --      msb_index <= 0;
-  --    end if;
-  --    msb_valid <= '1';
-  --  else
-  --    msb_index <= 0;
-  --    msb_valid <= '0';
-  --  end if;
-  --end process;
-
-
-  --comb_process : process(input_last_division, r, reset_n, divisor_is_negative, divisor, remainder_valid, remainders,msb_valid, divisor)
   comb_process : process(input_last_division, r, reset_n)
-    variable v                    : input_last_division_reg_type;
-    variable multiplicand_shifted : signed(PIXEL_DATA_WIDTH*2-1 downto 0);
-    variable overflow_multiplication : signed(PIXEL_DATA_WIDTH*2*2-1 downto 0);
-    variable test : integer;
-    variable test_2 : integer;
-    variable test_3 : integer;
+    variable v                                   : input_last_division_reg_type;
+    --variable dividend_shifted                    : signed(PIXEL_DATA_WIDTH*2-1 downto 0);
+    variable dividend_shifted                    : signed(PIXEL_DATA_WIDTH*2-1-DIVISION_FACTOR downto 0);
+    variable tmp                                 : signed(PIXEL_DATA_WIDTH*2-1-DIVISION_FACTOR downto 0);
+    variable multiplication_product              : signed(PIXEL_DATA_WIDTH*2*2-1-DIVISION_FACTOR-MULTIPLICATION_FACTOR downto 0);
+    variable shifted_down_multiplication_product : signed(PIXEL_DATA_WIDTH*2-1 downto 0);
+    variable resized_multiplicator               : signed(PIXEL_DATA_WIDTH*2-1-MULTIPLICATION_FACTOR downto 0);
   begin
 
     v := r;
     if(input_last_division.state_reg.state = STATE_LAST_DIVISION and input_last_division.valid_data = '1') then
-      v             := input_last_division;
-      v.best_approx := INITIAL_BEST_APPROX;
+      v.inv_row_i              := input_last_division.inv_row_i;
+      v.row_i                  := input_last_division.row_i;
+      v.valid_data             := input_last_division.valid_data;
+      v.index_i                := input_last_division.index_i;
+      v.state_reg.state        := input_last_division.state_reg.state;
+      v.write_address_even     := input_last_division.write_address_even;
+      v.write_address_odd      := input_last_division.write_address_odd;
+      v.flag_write_to_even_row := input_last_division.flag_write_to_even_row;
 
-      -- find msb
-      --    if divisor_is_negative = '1' then
-      --      -- Need to negate the divisor before finding the msb
-      --      v.row_i(input_last_division.index_i) := not(v.row_i(input_last_division.index_i)) + ONE;
-      --    end if;
-      --    for i in 0 to PIXEL_DATA_WIDTH*2-2 loop
-      --      if(v.row_i(input_last_division.index_i)(i) = '1') then
-      --        -- the first '1' found is the msb.
-      --        -- msb index is one-indexed
-      --        v.msb_index := i+1;
-      --      end if;
-      --    end loop;
-
-
----- Finding closest approximation to divisor 
-      --    for j in 0 to PIXEL_DATA_WIDTH*2-2 loop
-      --      if to_integer(unsigned(remainders(j))) < to_integer(unsigned(v.best_approx.remainder)) and (j <= v.msb_index) then
-      --        --if to_integer(unsigned(remainders(j))) < to_integer(unsigned(v.best_approx.remainder)) and (j <= msb_index) then
-      --        -- This is a better approximation
-      --        v.best_approx.remainder        := remainders(j);
-      --        v.best_approx.number_of_shifts := j;
-      --      end if;
-      --    end loop;
-      --    -- The best approximation to the divisor may be larger than the divisor.
-      --    if to_integer(signed(divisor))- to_integer(shift_left(to_signed(1, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts)) > to_integer(shift_left(to_signed(1, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts+1))- to_integer(signed(divisor)) then
-      --      -- This is a better approximation
-      --      v.best_approx.remainder        := std_logic_vector(to_signed(to_integer(shift_left(to_signed(1, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts+1))-to_integer(signed(divisor)), PIXEL_DATA_WIDTH*2));
-      --      v.best_approx.number_of_shifts := v.best_approx.number_of_shifts+1;
-      --    end if;
-
-      multiplicand_shifted :=resize(shift_left(ONE,PRECISION_SHIFT_LAST_DIVISION),multiplicand_shifted'length);
-      test := to_integer(input_last_division.row_i(input_last_division.index_i));
-      multiplicand_shifted := to_signed(to_integer(multiplicand_shifted)/to_integer(input_last_division.row_i(input_last_division.index_i)),multiplicand_shifted'length);
+      --dividend_shifted := resize(shift_left(ONE, PRECISION_SHIFT_LAST_DIVISION), dividend_shifted'length);
+      --dividend_shifted := to_signed(to_integer(dividend_shifted)/to_integer(input_last_division.row_i(input_last_division.index_i)), dividend_shifted'length);
+      dividend_shifted := resize(shift_left(ONE, PRECISION_SHIFT_LAST_DIVISION-DIVISION_FACTOR), dividend_shifted'length);
+      tmp              := resize(input_last_division.row_i(input_last_division.index_i), tmp'length);
+      dividend_shifted := to_signed(to_integer(dividend_shifted)/to_integer(tmp), dividend_shifted'length);
       for i in 0 to P_BANDS-1 loop
-        -- This product will most likely overflow..
-        test_2 := to_integer(input_last_division.inv_row_i(i));
-        -- shift down again..
-        test_3 :=to_integer(multiplicand_shifted);
-        v.inv_row_i(i) := shift_right(to_signed(to_integer(input_last_division.inv_row_i(i))*to_integer(multiplicand_shifted), PIXEL_DATA_WIDTH*2),PRECISION_SHIFT_LAST_DIVISION-1);
+        resized_multiplicator               := resize(input_last_division.inv_row_i(i), resized_multiplicator'length);
+        multiplication_product              := dividend_shifted*resized_multiplicator;
+        --multiplication_product              := dividend_shifted*input_last_division.inv_row_i(i);
+        --  multiplication_product              := resize(dividend_shifted,multiplication_product'length);
+        -- shift down  
+        shifted_down_multiplication_product := resize(shift_right(multiplication_product, PRECISION_SHIFT_LAST_DIVISION), shifted_down_multiplication_product'length);
+        v.inv_row_i(i)                      := shifted_down_multiplication_product;
       end loop;
--- Doing division
-    --    if divisor_is_negative = '1' then
-    --      for i in 0 to P_BANDS-1 loop
-    --        v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), v.best_approx.number_of_shifts);
-    --        -- Negating the number with two's complement
-    --        v.inv_row_i(i) := not(v.inv_row_i(i)) + ONE;
-    --      end loop;
-    --    else
-    --      for i in 0 to P_BANDS-1 loop
-    --        v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), v.best_approx.number_of_shifts);
-    --      end loop;
-    --    end if;
     end if;
 
     if(reset_n = '0' or input_last_division.state_reg.state /= STATE_LAST_DIVISION) then
-      v.valid_data  := '0';
-      v.best_approx := INITIAL_BEST_APPROX;
-      v.msb_index   := 31;
+      v.valid_data := '0';
+      for i in 0 to P_BANDS-1 loop
+        v.inv_row_i(i) := to_signed(0, PIXEL_DATA_WIDTH*2);
+        v.row_i(i)     := to_signed(0, PIXEL_DATA_WIDTH);
+      end loop;
+      v.index_i                := 0;
+      v.state_reg.state        := STATE_IDLE;
+      v.write_address_odd      := 0;
+      v.write_address_even     := 0;
+      v.flag_write_to_even_row := '0';
     end if;
     r_in                                        <= v;
+  end process;
+  -- Driving outputs from register
     output_last_division.new_inv_row_i          <= r.inv_row_i;
     output_last_division.valid_data             <= r.valid_data;
     output_last_division.index_i                <= r.index_i;
     output_last_division.write_address_even     <= r.write_address_even;
     output_last_division.write_address_odd      <= r.write_address_odd;
     output_last_division.flag_write_to_even_row <= r.flag_write_to_even_row;
-    output_last_division.state_reg              <= r.state_reg;
-  end process;
+    output_last_division.state_reg.state        <= r.state_reg.state;
 
 
   sequential_process : process(clk, clk_en)
   begin
-    if(rising_edge(clk) and clk_en = '1') then
-      r <= r_in;
+    if(rising_edge(clk)) then
+      if clk_en = '1' then
+        r <= r_in;
+      end if;
     end if;
   end process;
 
