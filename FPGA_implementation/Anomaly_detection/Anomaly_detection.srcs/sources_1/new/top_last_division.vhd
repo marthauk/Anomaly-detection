@@ -209,8 +209,8 @@ begin
 -- Doing division
       if divisor_is_negative = '1' then
         for i in 0 to P_BANDS-1 loop
-          if v.msb_index <= 16 then
-            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_from_lut, 16);
+          if v.msb_index <= DIV_PRECISION  then
+            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_from_lut, DIV_PRECISION );
             --v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), v.best_approx.number_of_shifts);
             -- Negating the number with two's complement
             v.inv_row_i(i) := not(v.inv_row_i(i)) + ONE;
@@ -222,8 +222,8 @@ begin
         end loop;
       else
         for i in 0 to P_BANDS-1 loop
-          if v.msb_index <= 16 then
-            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_from_lut, 16);
+          if v.msb_index <= DIV_PRECISION then
+            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_from_lut, DIV_PRECISION);
           else
             v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), v.best_approx.number_of_shifts);
           end if;
