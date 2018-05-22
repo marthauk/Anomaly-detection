@@ -85,7 +85,6 @@ architecture Behavioral of inverse_matrix is
   constant EVEN_ROW_TOP_INDEX      : integer range 0 to P_BANDS*PIXEL_DATA_WIDTH*2-1   := P_BANDS*PIXEL_DATA_WIDTH*2 -1;
 -- index of the topper bit of the odd rows in data out from the BRAMs:
   constant ODD_ROW_TOP_INDEX       : integer range 0 to 2*P_BANDS*PIXEL_DATA_WIDTH*2-1 := 2*P_BANDS*PIXEL_DATA_WIDTH*2 -1;
-
 begin
 
   gen_BRAM_18_for_storing_correlation_matrix : for i in 0 to P_BANDS-1 generate
@@ -275,17 +274,17 @@ begin
       input_last_division  => input_last_division,
       output_last_division => output_last_division);
 
-  just_for_test : process(data_out_brams_M, r)
-    variable row_even, row_odd, inv_row_even, inv_row_odd : row_array;
-  begin
-    for i in 0 to P_BANDS-1 loop
-      row_even(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
-      row_odd(i)      := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
--- the odd row
-      inv_row_even(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
-      inv_row_odd(i)  := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
-    end loop;
-  end process;
+  -- just_for_test : process(data_out_brams_M, r)
+  --   variable row_even, row_odd, inv_row_even, inv_row_odd : row_array;
+  -- begin
+  --   for i in 0 to P_BANDS-1 loop
+  --     row_even(i)     := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
+  --     row_odd(i)      := signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
+---- the odd row
+  --     inv_row_even(i) := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
+  --     inv_row_odd(i)  := signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
+  --   end loop;
+  -- end process;
 
 -- control address inputs and control inputs to BRAMs  
   control_addresses_and_control_BRAM : process(r, output_backward_elim, output_last_division, output_forward_elim)
@@ -337,6 +336,7 @@ begin
           write_enable_inv_even <= '0';
           write_enable_odd      <= '1';
           write_enable_even     <= '0';
+          write_address_even    <= 0;
           write_address_odd     <= output_backward_elim.write_address_odd;
         elsif(output_backward_elim.flag_write_to_even_row = '1') then
           -- the j-indexed row is an even row of the matrix 
@@ -345,12 +345,22 @@ begin
           write_enable_odd      <= '0';
           write_enable_even     <= '1';
           write_address_even    <= output_backward_elim.write_address_even;
+          write_address_odd     <= 0;   -- To avoid latches
+        else
+          write_enable_inv_odd  <= '0';
+          write_enable_inv_even <= '0';
+          write_enable_odd      <= '0';
+          write_enable_even     <= '0';
+          write_address_even    <= 0;
+          write_address_odd     <= 0;
         end if;
       else
         write_enable_inv_odd  <= '0';
         write_enable_inv_even <= '0';
         write_enable_even     <= '0';
         write_enable_odd      <= '0';
+        write_address_even    <= 0;
+        write_address_odd     <= 0;     -- To avoid latches
       end if;
     elsif r.state_reg.state = STATE_LAST_DIVISION then
       read_address_odd  <= r.read_address_odd;
@@ -367,6 +377,8 @@ begin
         write_enable_inv_odd  <= '0';
         write_enable_even     <= '0';
         write_enable_odd      <= '0';
+        write_address_even    <= 0;
+        write_address_odd     <= 0;
       end if;
     elsif r.state_reg.state = STATE_OUTPUT_INVERSE_MATRIX then
       read_address_even     <= r.read_address_even;
@@ -375,11 +387,15 @@ begin
       write_enable_inv_odd  <= '0';
       write_enable_even     <= '0';
       write_enable_odd      <= '0';
+      write_address_even    <= 0;
+      write_address_odd     <= 0;
     else
       write_enable_inv_even <= '0';
       write_enable_inv_odd  <= '0';
       write_enable_even     <= '0';
       write_enable_odd      <= '0';
+      write_address_even    <= 0;
+      write_address_odd     <= 0;
 
     end if;
 
@@ -424,13 +440,22 @@ begin
           input_elimination.flag_write_to_even_row          <= output_forward_elim.flag_write_to_even_row;
           input_elimination.flag_write_to_odd_row           <= output_forward_elim.flag_write_to_odd_row;
           input_elimination.forward_elimination_write_state <= output_forward_elim.forward_elimination_write_state;
+          -- Set input to last division
+          input_last_division.row_i                         <= ((others => (others => '0')));
+          input_last_division.inv_row_i                     <= ((others => (others => '0')));
+          input_last_division.state_reg.state               <= STATE_IDLE;
+          input_last_division.index_i                       <= 0;
+          input_last_division.valid_data                    <= '0';
+          input_last_division.flag_write_to_even_row        <= '0';
+          input_last_division.write_address_even            <= 0;
+          input_last_division.write_address_odd             <= 0;
         end if;
       elsif(r.state_reg.state = STATE_BACKWARD_ELIMINATION) then
         -- set input to forward_elimination
         input_forward_elimination.valid_data                  <= '0';
         input_forward_elimination.state_reg                   <= r.state_reg;
         input_forward_elimination.flag_first_data_elimination <= '0';
-        -- set input to backward elimination
+        -- set input to elimination core
         input_elimination.row_j                               <= r.row_j;
         input_elimination.row_i                               <= r.row_i;
         input_elimination.index_i                             <= r.index_i;
@@ -443,19 +468,64 @@ begin
         input_elimination.write_address_odd                   <= r.write_address_odd;
         input_elimination.flag_write_to_even_row              <= r.flag_write_to_even_row;
         input_elimination.flag_write_to_odd_row               <= r.flag_write_to_odd_row;
+        -- Set input to last division
+        input_last_division.row_i                             <= ((others => (others => '0')));
+        input_last_division.inv_row_i                         <= ((others => (others => '0')));
+        input_last_division.state_reg.state                   <= STATE_IDLE;
+        input_last_division.index_i                           <= 0;
+        input_last_division.valid_data                        <= '0';
+        input_last_division.flag_write_to_even_row            <= '0';
+        input_last_division.write_address_even                <= 0;
+        input_last_division.write_address_odd                 <= 0;
       elsif(r.state_reg.state = STATE_LAST_DIVISION) then
         -- Set input to last division
-        input_last_division.row_i                  <= r.row_i;
-        input_last_division.inv_row_i              <= r.inv_row_i;
-        input_last_division.state_reg              <= r.state_reg;
-        input_last_division.index_i                <= r.index_i;
-        input_last_division.valid_data             <= r.valid_data;
-        input_last_division.flag_write_to_even_row <= r.flag_write_to_even_row;
-        input_last_division.write_address_even     <= r.write_address_even;
-        input_last_division.write_address_odd      <= r.write_address_odd;
+        input_last_division.row_i                             <= r.row_i;
+        input_last_division.inv_row_i                         <= r.inv_row_i;
+        input_last_division.state_reg.state                   <= r.state_reg.state;
+        input_last_division.index_i                           <= r.index_i;
+        input_last_division.valid_data                        <= r.valid_data;
+        input_last_division.flag_write_to_even_row            <= r.flag_write_to_even_row;
+        input_last_division.write_address_even                <= r.write_address_even;
+        input_last_division.write_address_odd                 <= r.write_address_odd;
+        -- set input to elimination core
+        input_elimination.row_j                               <= r.row_j;
+        input_elimination.row_i                               <= r.row_i;
+        input_elimination.index_i                             <= r.index_i;
+        input_elimination.index_j                             <= r.index_j;
+        input_elimination.inv_row_j                           <= r.inv_row_j;
+        input_elimination.inv_row_i                           <= r.inv_row_i;
+        input_elimination.valid_data                          <= '0';
+        input_elimination.state_reg                           <= r.state_reg;
+        input_elimination.write_address_even                  <= r.write_address_even;
+        input_elimination.write_address_odd                   <= r.write_address_odd;
+        input_elimination.flag_write_to_even_row              <= '0';
+        input_elimination.flag_write_to_odd_row               <= '0';
+        -- set input to forward_elimination
+        input_forward_elimination.valid_data                  <= '0';
+        input_forward_elimination.state_reg                   <= r.state_reg;
+        input_forward_elimination.flag_first_data_elimination <= '0';
       else
-        input_last_division.valid_data <= '0';
-        input_elimination.valid_data   <= '0';
+        input_last_division.row_i                  <= ((others => (others => '0')));
+        input_last_division.inv_row_i              <= ((others => (others => '0')));
+        input_last_division.state_reg.state        <= STATE_IDLE;
+        input_last_division.index_i                <= 0;
+        input_last_division.valid_data             <= '0';
+        input_last_division.flag_write_to_even_row <= '0';
+        input_last_division.write_address_even     <= 0;
+        input_last_division.write_address_odd      <= 0;
+        -- set input to elimination core
+        input_elimination.row_j                    <= r.row_j;
+        input_elimination.row_i                    <= r.row_i;
+        input_elimination.index_i                  <= r.index_i;
+        input_elimination.index_j                  <= r.index_j;
+        input_elimination.inv_row_j                <= r.inv_row_j;
+        input_elimination.inv_row_i                <= r.inv_row_i;
+        input_elimination.valid_data               <= '0';
+        input_elimination.state_reg.state          <= STATE_IDLE;
+        input_elimination.write_address_even       <= r.write_address_even;
+        input_elimination.write_address_odd        <= r.write_address_odd;
+        input_elimination.flag_write_to_even_row   <= '0';
+        input_elimination.flag_write_to_odd_row    <= '0';
       end if;
     end if;
   end process;
@@ -505,7 +575,7 @@ begin
           v.flag_waiting_for_bram_update                                                                                           := '0';
         end if;
 --        v.state_reg.drive := IDLING;
-                                        -- need to wait until valid data on all
+      -- need to wait until valid data on all
       when STATE_STORE_CORRELATION_MATRIX =>
                                         -- SET BRAM to write input data 
         v.writes_done_on_column                                                                                                  := writes_done_on_column;

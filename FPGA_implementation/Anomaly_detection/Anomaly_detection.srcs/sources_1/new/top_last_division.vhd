@@ -39,12 +39,12 @@ begin
       y     => divisor_lut,
       y_inv => divisor_inv);
 
-  input_to_divisor_lut: process(msb_valid,msb_index)
+  input_to_divisor_lut : process(msb_valid, msb_index)
   begin
-    if msb_valid ='1' then
-        divisor_lut      <= to_unsigned(msb_index, DIV_PRECISION);
+    if msb_valid = '1' then
+      divisor_lut <= to_unsigned(msb_index, DIV_PRECISION);
     else
-        divisor_lut      <= to_unsigned(0, DIV_PRECISION);
+      divisor_lut <= to_unsigned(0, DIV_PRECISION);
     end if;
   end process;
 
@@ -106,68 +106,101 @@ begin
       --For PIXEL_DATA_WIDTH = 16.
       if divisor(30) = '1' then
         msb_index <= 30;
+        msb_valid <= '1';
       elsif divisor(29) = '1' then
         msb_index <= 29;
+        msb_valid <= '1';
       elsif divisor(28) = '1' then
         msb_index <= 28;
+        msb_valid <= '1';
       elsif divisor(27) = '1' then
         msb_index <= 27;
+        msb_valid <= '1';
       elsif divisor(26) = '1'then
         msb_index <= 26;
+        msb_valid <= '1';
       elsif divisor(25) = '1' then
         msb_index <= 25;
+        msb_valid <= '1';
       elsif divisor(24) = '1' then
         msb_index <= 24;
+        msb_valid <= '1';
       elsif divisor(23) = '1' then
         msb_index <= 23;
+        msb_valid <= '1';
       elsif divisor(22) = '1' then
         msb_index <= 22;
+        msb_valid <= '1';
       elsif divisor(21) = '1' then
         msb_index <= 21;
+        msb_valid <= '1';
       elsif divisor(20) = '1' then
         msb_index <= 20;
+        msb_valid <= '1';
       elsif divisor(19) = '1' then
         msb_index <= 19;
+        msb_valid <= '1';
       elsif divisor(18) = '1' then
         msb_index <= 18;
+        msb_valid <= '1';
       elsif divisor(17) = '1'then
         msb_index <= 17;
+        msb_valid <= '1';
       elsif divisor(16) = '1' then
         msb_index <= 16;
+        msb_valid <= '1';
       elsif divisor(15) = '1' then
         msb_index <= 15;
+        msb_valid <= '1';
       elsif divisor(14) = '1' then
         msb_index <= 14;
+        msb_valid <= '1';
       elsif divisor(13) = '1' then
         msb_index <= 13;
+        msb_valid <= '1';
       elsif divisor(12) = '1' then
         msb_index <= 12;
+        msb_valid <= '1';
       elsif divisor(11) = '1' then
         msb_index <= 11;
+        msb_valid <= '1';
       elsif divisor(10) = '1'then
         msb_index <= 10;
+        msb_valid <= '1';
       elsif divisor(9) = '1' then
         msb_index <= 9;
+        msb_valid <= '1';
       elsif divisor(8) = '1' then
         msb_index <= 8;
+        msb_valid <= '1';
       elsif divisor(7) = '1' then
         msb_index <= 7;
+        msb_valid <= '1';
       elsif divisor(6) = '1' then
         msb_index <= 6;
+        msb_valid <= '1';
       elsif divisor(5) = '1' then
         msb_index <= 5;
+        msb_valid <= '1';
       elsif divisor(4) = '1' then
         msb_index <= 4;
+        msb_valid <= '1';
       elsif divisor(3) = '1' then
         msb_index <= 3;
+        msb_valid <= '1';
       elsif divisor(2) = '1' then
         msb_index <= 2;
+        msb_valid <= '1';
       elsif divisor(1) = '1' then
         msb_index <= 1;
+        msb_valid <= '1';
       elsif divisor(0) = '1' then
         msb_index <= 0;
+        msb_valid <= '1';
+      else
+        msb_valid <= '0';
+        msb_index <= 0;
       end if;
-      msb_valid <= '1';
     else
       msb_index <= 0;
       msb_valid <= '0';
@@ -176,7 +209,7 @@ begin
 
 
   comb_process : process(input_last_division, r, reset_n, divisor_is_negative, divisor, remainder_valid, remainders, msb_valid, divisor, divisor_inv, msb_index)
-    variable v                : input_last_division_reg_type;
+    variable v                    : input_last_division_reg_type;
     variable divisor_inv_from_lut : integer range 0 to 2**DIV_PRECISION := 0;
   begin
 
@@ -209,8 +242,8 @@ begin
 -- Doing division
       if divisor_is_negative = '1' then
         for i in 0 to P_BANDS-1 loop
-          if v.msb_index <= DIV_PRECISION  then
-            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_inv_from_lut, DIV_PRECISION );
+          if v.msb_index <= DIV_PRECISION then
+            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_inv_from_lut, DIV_PRECISION);
             --v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), v.best_approx.number_of_shifts);
             -- Negating the number with two's complement
             v.inv_row_i(i) := not(v.inv_row_i(i)) + ONE;
