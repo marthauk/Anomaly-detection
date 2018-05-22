@@ -1,4 +1,3 @@
-
 library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -29,15 +28,9 @@ architecture Behavioral of top_last_division is
   signal msb_index           : integer range 0 to 31;  -- msb of the divisor(unsigned)
   signal msb_valid           : std_logic                             := '0';
   -- to be used in two's complement.
-  constant DIV_PRECISION     : integer range 0 to 31                 := 20;
   signal divisor_lut         : unsigned(DIV_PRECISION-1 downto 0);
   signal divisor_inv         : unsigned(DIV_PRECISION-1 downto 0);
 
-  constant INITIAL_BEST_APPROX : remainder_after_approximation_record := (
-    remainder        => (PIXEL_DATA_WIDTH*2-1 => '0', others => '1'),
-    number_of_shifts => 0,
-    remainder_valid  => '0'
-    );
 
 begin
 
@@ -45,6 +38,15 @@ begin
     port map (
       y     => divisor_lut,
       y_inv => divisor_inv);
+
+  input_to_divisor_lut: process(msb_valid,msb_index)
+  begin
+    if msb_valid ='1' then
+        divisor_lut      <= to_unsigned(msb_index, DIV_PRECISION);
+    else
+        divisor_lut      <= to_unsigned(0, DIV_PRECISION);
+    end if;
+  end process;
 
   check_if_divisor_is_negative : process(input_last_division.state_reg.state, input_last_division.row_i, input_last_division.valid_data, reset_n)
   begin
@@ -173,9 +175,9 @@ begin
   end process;
 
 
-  comb_process : process(input_last_division, r, reset_n, divisor_is_negative, divisor, remainder_valid, remainders, msb_valid, divisor)
+  comb_process : process(input_last_division, r, reset_n, divisor_is_negative, divisor, remainder_valid, remainders, msb_valid, divisor, divisor_inv, msb_index)
     variable v                : input_last_division_reg_type;
-    variable divisor_from_lut : integer range 0 to 2**DIV_PRECISION := 0;
+    variable divisor_inv_from_lut : integer range 0 to 2**DIV_PRECISION := 0;
   begin
 
     v := r;
@@ -185,13 +187,11 @@ begin
       v.msb_index   := msb_index;
 
 
-      if v.msb_index <= 20 then
-        divisor_lut      <= to_unsigned(v.msb_index, DIV_PRECISION);
-        divisor_from_lut := to_integer(divisor_inv);
+      if v.msb_index <= DIV_PRECISION then
+        divisor_inv_from_lut := to_integer(divisor_inv);
       else
         --Using shifting approach
-        divisor_lut      <= to_unsigned(0, DIV_PRECISION);
-        divisor_from_lut := to_integer(divisor_inv);
+        divisor_inv_from_lut := to_integer(divisor_inv);
 
         -- The best approximation may be either the msb-shifted division, or the
         -- msb+1 shifted division.
@@ -210,7 +210,7 @@ begin
       if divisor_is_negative = '1' then
         for i in 0 to P_BANDS-1 loop
           if v.msb_index <= DIV_PRECISION  then
-            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_from_lut, DIV_PRECISION );
+            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_inv_from_lut, DIV_PRECISION );
             --v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), v.best_approx.number_of_shifts);
             -- Negating the number with two's complement
             v.inv_row_i(i) := not(v.inv_row_i(i)) + ONE;
@@ -223,7 +223,7 @@ begin
       else
         for i in 0 to P_BANDS-1 loop
           if v.msb_index <= DIV_PRECISION then
-            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_from_lut, DIV_PRECISION);
+            v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i)*divisor_inv_from_lut, DIV_PRECISION);
           else
             v.inv_row_i(i) := shift_right(input_last_division.inv_row_i(i), v.best_approx.number_of_shifts);
           end if;

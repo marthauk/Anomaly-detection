@@ -504,7 +504,7 @@ begin
           v.wait_counter                                                                                                           := 0;
           v.flag_waiting_for_bram_update                                                                                           := '0';
         end if;
-        v.state_reg.drive := IDLING;
+--        v.state_reg.drive := IDLING;
                                         -- need to wait until valid data on all
       when STATE_STORE_CORRELATION_MATRIX =>
                                         -- SET BRAM to write input data 
@@ -540,7 +540,7 @@ begin
         end if;
         if valid = '0' then
           v.state_reg.state := STATE_IDLE;
-          v.state_reg.drive := STATE_IDLE_DRIVE;
+--          v.state_reg.drive := STATE_IDLE_DRIVE;
         end if;
       when STATE_FORWARD_ELIMINATION =>
         -- Set first memory_request?
@@ -608,7 +608,7 @@ begin
         -- end if;
         if (r.flag_first_data_elimination = '1') then  --received the first
           --input_data to backward elimination from BRAM
-          v.state_reg.fsm_start_signal  := START_BACKWARD_ELIMINATION;
+--          v.state_reg.fsm_start_signal  := START_BACKWARD_ELIMINATION;
           -- must set the flag low again
           v.flag_first_data_elimination := '0';
           for i in 0 to P_BANDS-1 loop
