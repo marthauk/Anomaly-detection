@@ -412,21 +412,26 @@ begin
         input_forward_elimination.state_reg                   <= r.state_reg;
         input_forward_elimination.valid_data                  <= '1';
         input_forward_elimination.flag_first_data_elimination <= r.flag_first_data_elimination;
+        -- Set input to last division
+        input_last_division.row_i                             <= ((others => (others => '0')));
+        input_last_division.inv_row_i                         <= ((others => (others => '0')));
+        input_last_division.state_reg.state                   <= STATE_IDLE;
+        input_last_division.index_i                           <= 0;
+        input_last_division.valid_data                        <= '0';
+        input_last_division.flag_write_to_even_row            <= '0';
+        input_last_division.write_address_even                <= 0;
+        input_last_division.write_address_odd                 <= 0;
         for i in 0 to P_BANDS-1 loop
-          -- the even row
           input_forward_elimination.row_even(i)     <= signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
-          -- the odd row
           input_forward_elimination.row_odd(i)      <= signed(data_out_brams_M(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
-          -- the even inverse row
           input_forward_elimination.inv_row_even(i) <= signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto i*PIXEL_DATA_WIDTH*2));
-          -- the odd inverse row
           input_forward_elimination.inv_row_odd(i)  <= signed(data_out_brams_M_inv(i*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX downto i*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX+1));
         end loop;
 
         --if (output_forward_elim.forward_elimination_write_state = EVEN_j_WRITE or output_forward_elim.forward_elimination_write_state = ODD_j_WRITE) and output_forward_elim.valid_data = '1' then
         if not(output_forward_elim.forward_elimination_write_state = SWAP_ROWS) and output_forward_elim.valid_data = '1' then
           -- USE the same elimination-core as backward elimination
-          -- set inputs to forward elimination
+          -- set inputs elimination core elimination
           input_elimination.row_j                           <= output_forward_elim.row_j;
           input_elimination.row_i                           <= output_forward_elim.row_i;
           input_elimination.index_i                         <= output_forward_elim.index_i;
@@ -440,43 +445,56 @@ begin
           input_elimination.flag_write_to_even_row          <= output_forward_elim.flag_write_to_even_row;
           input_elimination.flag_write_to_odd_row           <= output_forward_elim.flag_write_to_odd_row;
           input_elimination.forward_elimination_write_state <= output_forward_elim.forward_elimination_write_state;
-          -- Set input to last division
-          input_last_division.row_i                         <= ((others => (others => '0')));
-          input_last_division.inv_row_i                     <= ((others => (others => '0')));
-          input_last_division.state_reg.state               <= STATE_IDLE;
-          input_last_division.index_i                       <= 0;
-          input_last_division.valid_data                    <= '0';
-          input_last_division.flag_write_to_even_row        <= '0';
-          input_last_division.write_address_even            <= 0;
-          input_last_division.write_address_odd             <= 0;
+        else
+          -- set input to elimination core
+          input_elimination.row_j                           <= r.row_j;
+          input_elimination.row_i                           <= r.row_i;
+          input_elimination.index_i                         <= r.index_i;
+          input_elimination.index_j                         <= r.index_j;
+          input_elimination.inv_row_j                       <= r.inv_row_j;
+          input_elimination.inv_row_i                       <= r.inv_row_i;
+          input_elimination.valid_data                      <= '0';
+          input_elimination.state_reg.state                 <= STATE_IDLE;
+          input_elimination.write_address_even              <= r.write_address_even;
+          input_elimination.write_address_odd               <= r.write_address_odd;
+          input_elimination.flag_write_to_even_row          <= '0';
+          input_elimination.flag_write_to_odd_row           <= '0';
+          input_elimination.forward_elimination_write_state <= output_forward_elim.forward_elimination_write_state;
         end if;
       elsif(r.state_reg.state = STATE_BACKWARD_ELIMINATION) then
         -- set input to forward_elimination
         input_forward_elimination.valid_data                  <= '0';
         input_forward_elimination.state_reg                   <= r.state_reg;
         input_forward_elimination.flag_first_data_elimination <= '0';
+        for i in 0 to P_BANDS-1 loop
+          input_forward_elimination.row_even(i)     <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.row_odd(i)      <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.inv_row_even(i) <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.inv_row_odd(i)  <= to_signed(0, PIXEL_DATA_WIDTH*2);
+        end loop;
         -- set input to elimination core
-        input_elimination.row_j                               <= r.row_j;
-        input_elimination.row_i                               <= r.row_i;
-        input_elimination.index_i                             <= r.index_i;
-        input_elimination.index_j                             <= r.index_j;
-        input_elimination.inv_row_j                           <= r.inv_row_j;
-        input_elimination.inv_row_i                           <= r.inv_row_i;
-        input_elimination.valid_data                          <= r.valid_data;
-        input_elimination.state_reg                           <= r.state_reg;
-        input_elimination.write_address_even                  <= r.write_address_even;
-        input_elimination.write_address_odd                   <= r.write_address_odd;
-        input_elimination.flag_write_to_even_row              <= r.flag_write_to_even_row;
-        input_elimination.flag_write_to_odd_row               <= r.flag_write_to_odd_row;
+        input_elimination.row_j                           <= r.row_j;
+        input_elimination.row_i                           <= r.row_i;
+        input_elimination.index_i                         <= r.index_i;
+        input_elimination.index_j                         <= r.index_j;
+        input_elimination.inv_row_j                       <= r.inv_row_j;
+        input_elimination.inv_row_i                       <= r.inv_row_i;
+        input_elimination.valid_data                      <= r.valid_data;
+        input_elimination.state_reg                       <= r.state_reg;
+        input_elimination.write_address_even              <= r.write_address_even;
+        input_elimination.write_address_odd               <= r.write_address_odd;
+        input_elimination.flag_write_to_even_row          <= r.flag_write_to_even_row;
+        input_elimination.flag_write_to_odd_row           <= r.flag_write_to_odd_row;
+        input_elimination.forward_elimination_write_state <= output_forward_elim.forward_elimination_write_state;
         -- Set input to last division
-        input_last_division.row_i                             <= ((others => (others => '0')));
-        input_last_division.inv_row_i                         <= ((others => (others => '0')));
-        input_last_division.state_reg.state                   <= STATE_IDLE;
-        input_last_division.index_i                           <= 0;
-        input_last_division.valid_data                        <= '0';
-        input_last_division.flag_write_to_even_row            <= '0';
-        input_last_division.write_address_even                <= 0;
-        input_last_division.write_address_odd                 <= 0;
+        input_last_division.row_i                         <= ((others => (others => '0')));
+        input_last_division.inv_row_i                     <= ((others => (others => '0')));
+        input_last_division.state_reg.state               <= STATE_IDLE;
+        input_last_division.index_i                       <= 0;
+        input_last_division.valid_data                    <= '0';
+        input_last_division.flag_write_to_even_row        <= '0';
+        input_last_division.write_address_even            <= 0;
+        input_last_division.write_address_odd             <= 0;
       elsif(r.state_reg.state = STATE_LAST_DIVISION) then
         -- Set input to last division
         input_last_division.row_i                             <= r.row_i;
@@ -500,33 +518,85 @@ begin
         input_elimination.write_address_odd                   <= r.write_address_odd;
         input_elimination.flag_write_to_even_row              <= '0';
         input_elimination.flag_write_to_odd_row               <= '0';
+        input_elimination.forward_elimination_write_state     <= output_forward_elim.forward_elimination_write_state;
         -- set input to forward_elimination
         input_forward_elimination.valid_data                  <= '0';
         input_forward_elimination.state_reg                   <= r.state_reg;
         input_forward_elimination.flag_first_data_elimination <= '0';
+        for i in 0 to P_BANDS-1 loop
+          input_forward_elimination.row_even(i)     <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.row_odd(i)      <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.inv_row_even(i) <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.inv_row_odd(i)  <= to_signed(0, PIXEL_DATA_WIDTH*2);
+        end loop;
       else
-        input_last_division.row_i                  <= ((others => (others => '0')));
-        input_last_division.inv_row_i              <= ((others => (others => '0')));
-        input_last_division.state_reg.state        <= STATE_IDLE;
-        input_last_division.index_i                <= 0;
-        input_last_division.valid_data             <= '0';
-        input_last_division.flag_write_to_even_row <= '0';
-        input_last_division.write_address_even     <= 0;
-        input_last_division.write_address_odd      <= 0;
+        input_last_division.row_i                             <= ((others => (others => '0')));
+        input_last_division.inv_row_i                         <= ((others => (others => '0')));
+        input_last_division.state_reg.state                   <= STATE_IDLE;
+        input_last_division.index_i                           <= 0;
+        input_last_division.valid_data                        <= '0';
+        input_last_division.flag_write_to_even_row            <= '0';
+        input_last_division.write_address_even                <= 0;
+        input_last_division.write_address_odd                 <= 0;
         -- set input to elimination core
-        input_elimination.row_j                    <= r.row_j;
-        input_elimination.row_i                    <= r.row_i;
-        input_elimination.index_i                  <= r.index_i;
-        input_elimination.index_j                  <= r.index_j;
-        input_elimination.inv_row_j                <= r.inv_row_j;
-        input_elimination.inv_row_i                <= r.inv_row_i;
-        input_elimination.valid_data               <= '0';
-        input_elimination.state_reg.state          <= STATE_IDLE;
-        input_elimination.write_address_even       <= r.write_address_even;
-        input_elimination.write_address_odd        <= r.write_address_odd;
-        input_elimination.flag_write_to_even_row   <= '0';
-        input_elimination.flag_write_to_odd_row    <= '0';
+        input_elimination.row_j                               <= r.row_j;
+        input_elimination.row_i                               <= r.row_i;
+        input_elimination.index_i                             <= r.index_i;
+        input_elimination.index_j                             <= r.index_j;
+        input_elimination.inv_row_j                           <= r.inv_row_j;
+        input_elimination.inv_row_i                           <= r.inv_row_i;
+        input_elimination.valid_data                          <= '0';
+        input_elimination.state_reg.state                     <= STATE_IDLE;
+        input_elimination.write_address_even                  <= r.write_address_even;
+        input_elimination.write_address_odd                   <= r.write_address_odd;
+        input_elimination.flag_write_to_even_row              <= '0';
+        input_elimination.flag_write_to_odd_row               <= '0';
+        input_elimination.forward_elimination_write_state     <= output_forward_elim.forward_elimination_write_state;
+        -- set input to forward_elimination
+        input_forward_elimination.valid_data                  <= '0';
+        input_forward_elimination.state_reg                   <= r.state_reg;
+        input_forward_elimination.flag_first_data_elimination <= '0';
+        for i in 0 to P_BANDS-1 loop
+          input_forward_elimination.row_even(i)     <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.row_odd(i)      <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.inv_row_even(i) <= to_signed(0, PIXEL_DATA_WIDTH*2);
+          input_forward_elimination.inv_row_odd(i)  <= to_signed(0, PIXEL_DATA_WIDTH*2);
+        end loop;
       end if;
+    else
+      -- set input to forward_elimination
+      input_forward_elimination.valid_data                  <= '0';
+      input_forward_elimination.state_reg                   <= r.state_reg;
+      input_forward_elimination.flag_first_data_elimination <= '0';
+      for i in 0 to P_BANDS-1 loop
+        input_forward_elimination.row_even(i)     <= to_signed(0, PIXEL_DATA_WIDTH*2);
+        input_forward_elimination.row_odd(i)      <= to_signed(0, PIXEL_DATA_WIDTH*2);
+        input_forward_elimination.inv_row_even(i) <= to_signed(0, PIXEL_DATA_WIDTH*2);
+        input_forward_elimination.inv_row_odd(i)  <= to_signed(0, PIXEL_DATA_WIDTH*2);
+      end loop;
+      -- set input to elimination core
+      input_elimination.row_j                           <= r.row_j;
+      input_elimination.row_i                           <= r.row_i;
+      input_elimination.index_i                         <= r.index_i;
+      input_elimination.index_j                         <= r.index_j;
+      input_elimination.inv_row_j                       <= r.inv_row_j;
+      input_elimination.inv_row_i                       <= r.inv_row_i;
+      input_elimination.valid_data                      <= '0';
+      input_elimination.state_reg.state                 <= STATE_IDLE;
+      input_elimination.write_address_even              <= r.write_address_even;
+      input_elimination.write_address_odd               <= r.write_address_odd;
+      input_elimination.flag_write_to_even_row          <= '0';
+      input_elimination.flag_write_to_odd_row           <= '0';
+      input_elimination.forward_elimination_write_state <= output_forward_elim.forward_elimination_write_state;
+      -- Input to last division 
+      input_last_division.row_i                         <= ((others => (others => '0')));
+      input_last_division.inv_row_i                     <= ((others => (others => '0')));
+      input_last_division.state_reg.state               <= STATE_IDLE;
+      input_last_division.index_i                       <= 0;
+      input_last_division.valid_data                    <= '0';
+      input_last_division.flag_write_to_even_row        <= '0';
+      input_last_division.write_address_even            <= 0;
+      input_last_division.write_address_odd             <= 0;
     end if;
   end process;
 
@@ -545,7 +615,7 @@ begin
   end process;
 
 
-  comb : process(reset_n, valid, r, data_out_brams_M_inv, data_out_brams_M, output_forward_elim, output_backward_elim, output_last_division, din)  -- combinatorial process
+  comb : process(reset_n, valid, r, data_out_brams_M_inv, data_out_brams_M, output_forward_elim, output_backward_elim, output_last_division, din, writes_done_on_column, write_address_odd, write_address_even)  -- combinatorial process
     variable v : inverse_top_level_reg_type;
   begin
     v := r;

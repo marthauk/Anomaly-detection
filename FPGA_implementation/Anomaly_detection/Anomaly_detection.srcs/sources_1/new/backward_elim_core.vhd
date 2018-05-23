@@ -18,9 +18,9 @@ end backward_elim_core;
 
 architecture Behavioral of backward_elim_core is
 
-  signal r, r_in           : input_elimination_reg_type;
-  constant ONE             : signed(PIXEL_DATA_WIDTH*2-1 downto 0) := (0 => '1', others => '0');
-  constant PRECISION_SHIFT : integer range 0 to 3                  := 3;  -- Used to specify numbers of
+  signal r, r_in             : input_elimination_reg_type;
+  constant ONE               : signed(PIXEL_DATA_WIDTH*2-1 downto 0) := (0 => '1', others => '0');
+  constant PRECISION_SHIFT   : integer range 0 to 3                  := 3;  -- Used to specify numbers of
                                         -- shift of r_j_i
   signal divisor_is_negative : std_logic;
   -- If the divisor is negative, we need to take two's complement of the divisor
@@ -41,15 +41,15 @@ begin
       y     => divisor_lut,
       y_inv => divisor_inv);
 
-  input_to_divisor_lut: process(msb_valid,msb_index)
+  input_to_divisor_lut : process(msb_valid, msb_index)
   begin
-    if msb_valid ='1' then
-        divisor_lut      <= to_unsigned(msb_index, DIV_PRECISION);
+    if msb_valid = '1' then
+      divisor_lut <= to_unsigned(msb_index, DIV_PRECISION);
     else
-        divisor_lut      <= to_unsigned(0, DIV_PRECISION);
+      divisor_lut <= to_unsigned(0, DIV_PRECISION);
     end if;
   end process;
-      
+
 
   check_if_divisor_is_negative : process(input_backward_elim.state_reg.state, input_backward_elim.row_i, input_backward_elim.valid_data, reset_n)
   begin
@@ -109,68 +109,101 @@ begin
       --For PIXEL_DATA_WIDTH = 16.
       if divisor(30) = '1' then
         msb_index <= 30;
+        msb_valid <= '1';
       elsif divisor(29) = '1' then
         msb_index <= 29;
+        msb_valid <= '1';
       elsif divisor(28) = '1' then
         msb_index <= 28;
+        msb_valid <= '1';
       elsif divisor(27) = '1' then
         msb_index <= 27;
+        msb_valid <= '1';
       elsif divisor(26) = '1'then
         msb_index <= 26;
+        msb_valid <= '1';
       elsif divisor(25) = '1' then
         msb_index <= 25;
+        msb_valid <= '1';
       elsif divisor(24) = '1' then
         msb_index <= 24;
+        msb_valid <= '1';
       elsif divisor(23) = '1' then
         msb_index <= 23;
+        msb_valid <= '1';
       elsif divisor(22) = '1' then
         msb_index <= 22;
+        msb_valid <= '1';
       elsif divisor(21) = '1' then
         msb_index <= 21;
+        msb_valid <= '1';
       elsif divisor(20) = '1' then
         msb_index <= 20;
+        msb_valid <= '1';
       elsif divisor(19) = '1' then
         msb_index <= 19;
+        msb_valid <= '1';
       elsif divisor(18) = '1' then
         msb_index <= 18;
+        msb_valid <= '1';
       elsif divisor(17) = '1'then
         msb_index <= 17;
+        msb_valid <= '1';
       elsif divisor(16) = '1' then
         msb_index <= 16;
+        msb_valid <= '1';
       elsif divisor(15) = '1' then
         msb_index <= 15;
+        msb_valid <= '1';
       elsif divisor(14) = '1' then
         msb_index <= 14;
+        msb_valid <= '1';
       elsif divisor(13) = '1' then
         msb_index <= 13;
+        msb_valid <= '1';
       elsif divisor(12) = '1' then
         msb_index <= 12;
+        msb_valid <= '1';
       elsif divisor(11) = '1' then
         msb_index <= 11;
+        msb_valid <= '1';
       elsif divisor(10) = '1'then
         msb_index <= 10;
+        msb_valid <= '1';
       elsif divisor(9) = '1' then
         msb_index <= 9;
+        msb_valid <= '1';
       elsif divisor(8) = '1' then
         msb_index <= 8;
+        msb_valid <= '1';
       elsif divisor(7) = '1' then
         msb_index <= 7;
+        msb_valid <= '1';
       elsif divisor(6) = '1' then
         msb_index <= 6;
+        msb_valid <= '1';
       elsif divisor(5) = '1' then
         msb_index <= 5;
+        msb_valid <= '1';
       elsif divisor(4) = '1' then
         msb_index <= 4;
+        msb_valid <= '1';
       elsif divisor(3) = '1' then
         msb_index <= 3;
+        msb_valid <= '1';
       elsif divisor(2) = '1' then
         msb_index <= 2;
+        msb_valid <= '1';
       elsif divisor(1) = '1' then
         msb_index <= 1;
+        msb_valid <= '1';
       elsif divisor(0) = '1' then
         msb_index <= 0;
+        msb_valid <= '1';
+      else
+        msb_index <= 0;
+        msb_valid <= '0';
       end if;
-      msb_valid <= '1';
     else
       msb_index <= 0;
       msb_valid <= '0';
@@ -187,30 +220,30 @@ begin
     variable shifted_down_inner_product : signed(PIXEL_DATA_WIDTH*2-1 downto 0);
     --variable r_i_i_halv                 : integer;
     variable r_i_i_halv                 : signed(PIXEL_DATA_WIDTH*2 +PRECISION_SHIFT-1 downto 0);
-    variable divisor_inv_from_lut : integer range 0 to 2**DIV_PRECISION:=0;
+    variable divisor_inv_from_lut       : integer range 0 to 2**DIV_PRECISION := 0;
   ---
   begin
     v := r;
 
-    if((input_backward_elim.state_reg.state = STATE_BACKWARD_ELIMINATION or input_backward_elim.state_reg.state = STATE_FORWARD_ELIMINATION) and input_backward_elim.valid_data = '1' and remainder_valid='1' and msb_valid='1') then
+    if((input_backward_elim.state_reg.state = STATE_BACKWARD_ELIMINATION or input_backward_elim.state_reg.state = STATE_FORWARD_ELIMINATION) and input_backward_elim.valid_data = '1' and remainder_valid = '1' and msb_valid = '1') then
       -- Load data set index_j
-      v.row_j     := input_backward_elim.row_j;
-      v.row_i     := input_backward_elim.row_i;
-      v.inv_row_j := input_backward_elim.inv_row_j;
-      v.inv_row_i := input_backward_elim.inv_row_i;
-      v.index_i   := input_backward_elim.index_i;
-      v.index_j   := input_backward_elim.index_j;
+      v.row_j       := input_backward_elim.row_j;
+      v.row_i       := input_backward_elim.row_i;
+      v.inv_row_j   := input_backward_elim.inv_row_j;
+      v.inv_row_i   := input_backward_elim.inv_row_i;
+      v.index_i     := input_backward_elim.index_i;
+      v.index_j     := input_backward_elim.index_j;
       v.best_approx := INITIAL_BEST_APPROX;
       v.msb_index   := msb_index;
 
-      r_i_i         := to_integer(input_backward_elim.row_i(input_backward_elim.index_i));
+      r_i_i      := to_integer(input_backward_elim.row_i(input_backward_elim.index_i));
       --r_i_i_halv    := to_integer(shift_right(to_signed(r_i_i, PIXEL_DATA_WIDTH*2), 1));  -- dividing
-      r_i_i_halv    := shift_left((shift_right(to_signed(r_i_i, r_i_i_halv'length), 1)),PRECISION_SHIFT);
+      r_i_i_halv := shift_left((shift_right(to_signed(r_i_i, r_i_i_halv'length), 1)), PRECISION_SHIFT);
 --dividing by two, then shifting up again with precision shift.
 
-      r_j_i         := shift_left(resize(input_backward_elim.row_j(input_backward_elim.index_i), r_j_i'length), PRECISION_SHIFT);
+      r_j_i := shift_left(resize(input_backward_elim.row_j(input_backward_elim.index_i), r_j_i'length), PRECISION_SHIFT);
       -- For more precise integer division(in Vivado the rounding is always downwards)
-      r_j_i         := r_j_i+r_i_i_halv;
+      r_j_i := r_j_i+r_i_i_halv;
 
       if v.msb_index <= DIV_PRECISION then
         divisor_inv_from_lut := to_integer(divisor_inv);
@@ -234,28 +267,28 @@ begin
         --inner_product := to_signed(to_integer(input_backward_elim.row_i(i))*to_integer(r_j_i_divided), inner_product'length);
         if v.msb_index <= DIV_PRECISION then
           -- Using lut-table
-         inner_product := resize(input_backward_elim.row_i(i)* r_j_i*divisor_inv_from_lut,inner_product'length); 
-        shifted_down_inner_product :=resize(shift_right(inner_product,PRECISION_SHIFT+DIV_PRECISION),shifted_down_inner_product'length);
-         -- To matrix A
-        v.row_j(i)    := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
+          inner_product              := resize(input_backward_elim.row_i(i)* r_j_i*divisor_inv_from_lut, inner_product'length);
+          shifted_down_inner_product := resize(shift_right(inner_product, PRECISION_SHIFT+DIV_PRECISION), shifted_down_inner_product'length);
+          -- To matrix A
+          v.row_j(i)                 := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
 
-         inner_product := resize(input_backward_elim.inv_row_i(i)* r_j_i*divisor_inv_from_lut,inner_product'length); 
-        shifted_down_inner_product :=resize(shift_right(inner_product,PRECISION_SHIFT+DIV_PRECISION),shifted_down_inner_product'length);
-        -- To matrix A_inv
-        v.inv_row_j(i) := to_signed(to_integer(input_backward_elim.inv_row_j(i))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
+          inner_product              := resize(input_backward_elim.inv_row_i(i)* r_j_i*divisor_inv_from_lut, inner_product'length);
+          shifted_down_inner_product := resize(shift_right(inner_product, PRECISION_SHIFT+DIV_PRECISION), shifted_down_inner_product'length);
+          -- To matrix A_inv
+          v.inv_row_j(i)             := to_signed(to_integer(input_backward_elim.inv_row_j(i))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
 
-          else
-            -- Using shifting approach to division
-            inner_product := shift_right(input_backward_elim.row_i(i)*r_j_i,v.best_approx.number_of_shifts);
-            shifted_down_inner_product :=resize(shift_right(inner_product,PRECISION_SHIFT),shifted_down_inner_product'length);
-         -- To matrix A
-        v.row_j(i)    := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
-            inner_product := shift_right(input_backward_elim.inv_row_i(i)*r_j_i,v.best_approx.number_of_shifts);
-            shifted_down_inner_product :=resize(shift_right(inner_product,PRECISION_SHIFT),shifted_down_inner_product'length);
-        -- To matrix A_inv
-        v.inv_row_j(i) := to_signed(to_integer(input_backward_elim.inv_row_j(i))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
+        else
+          -- Using shifting approach to division
+          inner_product              := shift_right(input_backward_elim.row_i(i)*r_j_i, v.best_approx.number_of_shifts);
+          shifted_down_inner_product := resize(shift_right(inner_product, PRECISION_SHIFT), shifted_down_inner_product'length);
+          -- To matrix A
+          v.row_j(i)                 := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
+          inner_product              := shift_right(input_backward_elim.inv_row_i(i)*r_j_i, v.best_approx.number_of_shifts);
+          shifted_down_inner_product := resize(shift_right(inner_product, PRECISION_SHIFT), shifted_down_inner_product'length);
+          -- To matrix A_inv
+          v.inv_row_j(i)             := to_signed(to_integer(input_backward_elim.inv_row_j(i))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
 
-            end if;
+        end if;
         --inner_product := input_backward_elim.row_i(i)*r_j_i_divided;
         --shift down again since shifting r_j_i by PRECISION_SHIFT number of
         --shifts
@@ -267,13 +300,13 @@ begin
         --v.row_j(i)    := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-temp, 32);
         --v.row_j(i)    := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
 
-        --inner_product := input_backward_elim.inv_row_i(i)*r_j_i_divided;
-        --inner_product  := to_signed(to_integer(input_backward_elim.inv_row_i(i))*to_integer(r_j_i_divided), inner_product'length);
-        --shift down again since shifting r_j_i
-        --shifted_down_inner_product :=resize(shift_right(inner_product,PRECISION_SHIFT+PIXEL_DATA_WIDTH*2),shifted_down_inner_product'length);
-        --temp           := (inner_product+r_i_i_halv);
-        --temp           := to_integer(shift_right(to_signed(temp, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts));
-        --v.inv_row_j(i) := to_signed(to_integer(input_backward_elim.inv_row_j(i))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
+      --inner_product := input_backward_elim.inv_row_i(i)*r_j_i_divided;
+      --inner_product  := to_signed(to_integer(input_backward_elim.inv_row_i(i))*to_integer(r_j_i_divided), inner_product'length);
+      --shift down again since shifting r_j_i
+      --shifted_down_inner_product :=resize(shift_right(inner_product,PRECISION_SHIFT+PIXEL_DATA_WIDTH*2),shifted_down_inner_product'length);
+      --temp           := (inner_product+r_i_i_halv);
+      --temp           := to_integer(shift_right(to_signed(temp, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts));
+      --v.inv_row_j(i) := to_signed(to_integer(input_backward_elim.inv_row_j(i))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
       end loop;
       -- Control signals --
       v.write_address_odd               := input_backward_elim.write_address_odd;
@@ -305,10 +338,12 @@ begin
   end process;
 
 
-  sequential_process : process(clk, clk_en)
+  sequential_process : process(clk)
   begin
-    if(rising_edge(clk) and clk_en = '1') then
-      r <= r_in;
+    if rising_edge(clk) then
+      if clk_en = '1' then
+        r <= r_in;
+      end if;
     end if;
   end process;
 
