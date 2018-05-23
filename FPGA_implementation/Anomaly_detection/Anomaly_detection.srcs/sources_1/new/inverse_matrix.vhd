@@ -138,17 +138,19 @@ begin
               data_in_even_i <= std_logic_vector(output_forward_elim.row_i(i));
               data_in_odd_i  <= std_logic_vector(output_forward_elim.row_j(i));
             end if;
+          else
+            data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+            data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
           end if;
-        -- need to check if output_backward_elimination is in state
-        -- EVEN_j_WRITE or ODD_j_WRITE... Need also to make sure that
-        -- output_forward_elim.forwar not in state SWAP ROWS while
         -- output_backward_elim in state EVEN_j or ODD_j
         elsif output_backward_elim.flag_write_to_even_row = '1' and output_backward_elim.valid_data = '1' then
           -- row_j is at even row
           data_in_even_i <= std_logic_vector(output_backward_elim.new_row_j(i));
+          data_odd_i     <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
         elsif output_backward_elim.flag_write_to_odd_row = '1' and output_backward_elim.valid_data = '1' then
           -- row_j is at odd row
           data_in_odd_i <= std_logic_vector(output_backward_elim.new_row_j(i));
+          data_even_i   <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
         end if;
       elsif (r.state_reg.state = STATE_BACKWARD_ELIMINATION) then
         if(output_backward_elim.valid_data = '1') then
@@ -156,12 +158,25 @@ begin
           if(output_backward_elim.flag_write_to_odd_row = '1') then
             -- the j-indexed row is an odd row of the matrix
             data_in_odd_i <= std_logic_vector(output_backward_elim.new_row_j(i));
+            data_even_i   <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
           elsif(output_backward_elim.flag_write_to_even_row = '1') then
             -- the j-indexed row is an even row of the matrix 
             data_in_even_i <= std_logic_vector(output_backward_elim.new_row_j(i));
+            data_odd_i     <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+          else
+            data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+            data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
           end if;
+        else
+          data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+          data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
         end if;
       elsif(r.state_reg.state = STATE_LAST_DIVISION) then
+        data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+        data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+      else
+        data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+        data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
       end if;
     end process;
     data_out_brams_M(PIXEL_DATA_WIDTH*2-1 + i*PIXEL_DATA_WIDTH*2 downto i*PIXEL_DATA_WIDTH*2)                                                           <= data_out_even_i;
@@ -212,13 +227,26 @@ begin
         inv_data_in_odd_i  <= r.bram_write_data_M_inv(PIXEL_DATA_WIDTH*2-1 +i*PIXEL_DATA_WIDTH*2+P_BANDS*PIXEL_DATA_WIDTH*2 downto i*PIXEL_DATA_WIDTH*2 + P_BANDS*PIXEL_DATA_WIDTH*2);
       elsif r.state_reg.state = STATE_FORWARD_ELIMINATION then
         if output_forward_elim.forward_elimination_write_state = SWAP_ROWS and output_forward_elim.valid_data = '1' then
-        -- do nothing actually
+          -- do nothing actually
+          -- Set data in to zero. Should not overwrite data anyway, write enable
+          -- is not active
+          inv_data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+          inv_data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
         elsif output_backward_elim.flag_write_to_even_row = '1' and output_backward_elim.valid_data = '1' then
           -- row_j is at even row
           inv_data_in_even_i <= std_logic_vector(output_backward_elim.new_inv_row_j(i));
+          -- data in to odd row is not important; write_enable odd is not
+          -- enabled anyhow
+          inv_data_odd_i     <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
         elsif output_backward_elim.flag_write_to_odd_row = '1' and output_backward_elim.valid_data = '1' then
           -- row_j is at odd row
           inv_data_in_odd_i <= std_logic_vector(output_backward_elim.new_inv_row_j(i));
+          -- data in to even row is not important; write_enable even is not
+          -- enabled anyhow
+          inv_data_even_i   <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+        else
+          inv_data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+          inv_data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
         end if;
       elsif (r.state_reg.state = STATE_BACKWARD_ELIMINATION) then
         if(output_backward_elim.valid_data = '1') then
@@ -226,21 +254,40 @@ begin
           if(output_backward_elim.flag_write_to_odd_row = '1') then
             -- the j-indexed row is an odd row of the matrix
             inv_data_in_odd_i <= std_logic_vector(output_backward_elim.new_inv_row_j(i));
+            inv_data_even_i   <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
           elsif(output_backward_elim.flag_write_to_even_row = '1') then
             -- the j-indexed row is an even row of the matrix 
             inv_data_in_even_i <= std_logic_vector(output_backward_elim.new_inv_row_j(i));
+            inv_data_odd_i     <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+          else
+            inv_data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+            inv_data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
           end if;
+        else
+          inv_data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+          inv_data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
         end if;
       elsif(r.state_reg.state = STATE_LAST_DIVISION) then
         if output_last_division.valid_data = '1' then
           if output_last_division.flag_write_to_even_row = '1' then
             -- index i is at an even index of the matrix
             inv_data_in_even_i <= std_logic_vector(output_last_division.new_inv_row_i(i));
+            inv_data_odd_i     <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
           elsif output_last_division.flag_write_to_even_row = '0' then
             -- index i is at an odd index of the matrix
             inv_data_in_odd_i <= std_logic_vector(output_last_division.new_inv_row_i(i));
+            inv_data_even_i   <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+          else
+            inv_data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+            inv_data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
           end if;
+        else
+          inv_data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+          inv_data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
         end if;
+      else
+        inv_data_odd_i  <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
+        inv_data_even_i <= std_logic_vector(to_signed(0, PIXEL_DATA_WIDTH*2));
       end if;
     end process;
 -- DATA outputted from the BRAMs
@@ -309,7 +356,7 @@ begin
         write_enable_odd      <= output_forward_elim.flag_write_to_odd_row;
         write_enable_inv_even <= '0';
         write_enable_inv_odd  <= '0';
-      elsif output_backward_elim.forward_elimination_write_state = EVEN_j_WRITE or output_backward_elim.forward_elimination_write_state = ODD_j_WRITE then
+      elsif output_backward_elim.forward_elimination_write_state = EVEN_j_WRITE or output_backward_elim.forward_elimination_write_state = ODD_j_WRITE and output_backward_elim.valid_data = '1' then
         write_address_even    <= output_backward_elim.write_address_even;
         write_address_odd     <= output_backward_elim.write_address_odd;
         write_enable_even     <= output_backward_elim.flag_write_to_even_row;

@@ -102,6 +102,7 @@ begin
         input_swap_rows.address_row_j                   <= 0;
         input_swap_rows.flag_write_to_even_row          <= '0';
         input_swap_rows.flag_write_to_odd_row           <= '0';
+        input_swap_rows.flag_prev_row_i_at_odd_row      <= '0';
     end case;
   end process;
 
