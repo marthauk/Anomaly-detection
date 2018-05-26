@@ -25,7 +25,7 @@ architecture Behavioral of shiftregister_four_pixels is
   signal r_shift_counter_in, r_shift_counter : std_logic_vector(log2(P_BANDS*PIXEL_DATA_WIDTH/64) downto 0) := (others => '0');
 
 begin
-  comb_proc : process(din, valid, dout)
+  comb_proc : process(din, valid, dout,r_shift_counter)
     variable v_shift_counter      : integer := to_integer(unsigned(r_shift_counter));
     variable v_temp_shift_data_in : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH-1 -4*PIXEL_DATA_WIDTH downto 0);
     variable v                    : std_logic_vector(P_BANDS * PIXEL_DATA_WIDTH -1 downto 0);
@@ -33,11 +33,12 @@ begin
     if(valid = '1')then
       v_shift_counter                                                                    := to_integer(unsigned(r_shift_counter)) + 1;
       v                                                                                  := dout;
-      -- Shifting in 4 pixels at the time. Number of pixels shifted in could
-      -- possibly be made constant and put in common_types_and_functions
       v_temp_shift_data_in                                                               := v(P_BANDS*PIXEL_DATA_WIDTH-1 downto 4*PIXEL_DATA_WIDTH);
       v(P_BANDS*PIXEL_DATA_WIDTH-1 - 4*PIXEL_DATA_WIDTH downto 0)                        := v_temp_shift_data_in;
       v(P_BANDS*PIXEL_DATA_WIDTH-1 downto P_BANDS*PIXEL_DATA_WIDTH - 4*PIXEL_DATA_WIDTH) := din;
+    else
+    	v_shift_counter :=0;
+    	v := (others =>'0');
     end if;
     if(reset_n = '0') then
       v               := (others => '0');
