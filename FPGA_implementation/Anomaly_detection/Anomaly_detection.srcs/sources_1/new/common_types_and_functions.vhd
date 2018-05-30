@@ -30,7 +30,7 @@ package Common_types_and_functions is
   -- N_PIXELS is the number of pixels in the hyperspectral image
   constant N_PIXELS                   : integer range 0 to 628864 := 628864;  -- 578 pixels per row * 1088 rows
   -- P_BANDS  is the number of spectral bands
-  constant P_BANDS                    : integer range 0 to 100    := 4;
+  constant P_BANDS                    : integer range 0 to 100    := 10;
   --constant P_BANDS : integer := 100;
   -- K is size of the kernel used in LRX. 
   constant K                          : integer;
@@ -86,15 +86,15 @@ package Common_types_and_functions is
 
   type reg_state_type is record
     state                           : state_type;
-    drive                           : std_logic_vector(2 downto 0);
-    fsm_start_signal                : std_logic_vector(1 downto 0);
-    inner_loop_iter_finished        : std_logic;
-    inner_loop_last_iter_finished   : std_logic;
-    start_inner_loop                : std_logic;
-    forward_elim_ctrl_signal        : std_logic_vector(1 downto 0);
-    forward_elim_state_signal       : std_logic_vector(1 downto 0);
-    flag_forward_core_started       : std_logic;
-    flag_forward_triangular_started : std_logic;
+    --drive                           : std_logic_vector(2 downto 0);
+    --fsm_start_signal                : std_logic_vector(1 downto 0);
+    --inner_loop_iter_finished        : std_logic;
+    --inner_loop_last_iter_finished   : std_logic;
+    --start_inner_loop                : std_logic;
+    --forward_elim_ctrl_signal        : std_logic_vector(1 downto 0);
+    --forward_elim_state_signal       : std_logic_vector(1 downto 0);
+    --flag_forward_core_started       : std_logic;
+    --flag_forward_triangular_started : std_logic;
   end record;
 
 
@@ -158,7 +158,7 @@ package Common_types_and_functions is
     write_enable_even                                   : std_logic;  -- Remove?
     write_enable_odd                                    : std_logic;  -- Remove?
     read_enable                                         : std_logic;
-    writes_done_on_column                               : std_logic_vector(1 downto 0);  --should
+    writes_done_on_column                               : std_logic_vector(2 downto 0);  --should
     --be size log2(P_BANDS/2)downto 0. Need to edit the size manually if
     --changing P_BANDS.
     flag_first_data_elimination                         : std_logic;
@@ -270,6 +270,12 @@ package Common_types_and_functions is
     state_reg              : reg_state_type;
   end record;
 
+  constant INITIAL_BEST_APPROX : remainder_after_approximation_record := (
+    remainder        => (PIXEL_DATA_WIDTH*2-1 => '0', others => '1'),
+    number_of_shifts => 0,
+    remainder_valid  => '0'
+    );
+  constant DIV_PRECISION     : integer range 0 to 31                 := 17;
 
   function log2(i                    : natural) return integer;
   function sel (n                    : natural) return integer;

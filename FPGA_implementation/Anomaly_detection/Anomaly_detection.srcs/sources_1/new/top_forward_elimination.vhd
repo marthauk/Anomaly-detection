@@ -57,6 +57,15 @@ begin
     case r.forward_elimination_write_state is
       when STATE_IDLE =>
         input_swap_rows.forward_elimination_write_state <= STATE_IDLE;
+        input_swap_rows.row_i                           <= ((others => (others => '0')));
+        input_swap_rows.row_j                           <= ((others => (others => '0')));
+        input_swap_rows.index_i                         <= 0;
+        input_swap_rows.index_j                         <= 0;
+        input_swap_rows.address_row_i                   <= 0;
+        input_swap_rows.address_row_j                   <= 0;
+        input_swap_rows.flag_write_to_even_row          <= '0';
+        input_swap_rows.flag_write_to_odd_row           <= '0';
+        input_swap_rows.flag_prev_row_i_at_odd_row      <= '0';
       when SWAP_ROWS =>
         input_swap_rows.forward_elimination_write_state <= r.forward_elimination_write_state;
         if r.flag_start_swapping_rows = '1' then
@@ -71,10 +80,29 @@ begin
           input_swap_rows.flag_write_to_odd_row      <= r.flag_write_to_odd_row;
           input_swap_rows.flag_prev_row_i_at_odd_row <= r.flag_prev_row_i_at_odd_row;
         else
-        -- receive row i and row j from BRAM directly
+          -- receive row i and row j from BRAM directly
+          -- Not been simulated and tested that this works. 
+          input_swap_rows.row_i                      <= input_forward_elimination.row_i;
+          input_swap_rows.row_j                      <= input_forward_elimination.row_j;
+          input_swap_rows.index_i                    <= input_forward_elimination.index_i;
+          input_swap_rows.index_j                    <= input_forward_elimination.index_j;
+          input_swap_rows.address_row_i              <= input_forward_elimination.address_row_i;
+          input_swap_rows.address_row_j              <= input_forward_elimination.address_row_j;
+          input_swap_rows.flag_write_to_even_row     <= input_forward_elimination.flag_write_to_even_row;
+          input_swap_rows.flag_write_to_odd_row      <= input_forward_elimination.flag_write_to_odd_row;
+          input_swap_rows.flag_prev_row_i_at_odd_row <= input_forward_elimination.flag_prev_row_i_at_odd_row;
         end if;
       when others =>
         input_swap_rows.forward_elimination_write_state <= STATE_IDLE;
+        input_swap_rows.row_i                           <= ((others => (others => '0')));
+        input_swap_rows.row_j                           <= ((others => (others => '0')));
+        input_swap_rows.index_i                         <= 0;
+        input_swap_rows.index_j                         <= 0;
+        input_swap_rows.address_row_i                   <= 0;
+        input_swap_rows.address_row_j                   <= 0;
+        input_swap_rows.flag_write_to_even_row          <= '0';
+        input_swap_rows.flag_write_to_odd_row           <= '0';
+        input_swap_rows.flag_prev_row_i_at_odd_row      <= '0';
     end case;
   end process;
 
@@ -122,13 +150,13 @@ begin
             v.flag_prev_row_i_at_odd_row          := '0';
             v.wait_counter                        := 0;
             v.flag_waiting_for_bram_update        := '0';
-          elsif r.index_i >=P_BANDS-2 and r.index_j >= P_BANDS-3 then
+          elsif r.index_i >= P_BANDS-2 and r.index_j >= P_BANDS-3 then
             -- Forward elimination is finished.
-            v.valid_data :='0';
-            v.flag_write_to_odd_row :='0';
-            v.flag_write_to_even_row :='0';
-            v.read_address_even := P_BANDS/2-1;
-            v.read_address_even := P_BANDS/2-1;
+            v.valid_data             := '0';
+            v.flag_write_to_odd_row  := '0';
+            v.flag_write_to_even_row := '0';
+            v.read_address_even      := P_BANDS/2-1;
+            v.read_address_even      := P_BANDS/2-1;
           else
             v.valid_data := '0';
             v.index_i    := r.index_i + 1;
@@ -293,11 +321,11 @@ begin
               v.forward_elimination_write_state := EVEN_j_WRITE;
             else
               --New iteration of the outermost loop
-              if v.index_j = P_BANDS-1 and v.index_i= P_BANDS-3 then
+              if v.index_j = P_BANDS-1 and v.index_i = P_BANDS-3 then
                 -- The last row_i of the forward elimination is located at an
                 -- even indexed row.
                 v.flag_prev_row_i_at_odd_row := '0';
-                end if;
+              end if;
               v.forward_elimination_write_state := CHECK_DIAGONAL_ELEMENT_IS_ZERO;
             end if;
             -- read new data. Data need to be read two clock cycles in advance 
