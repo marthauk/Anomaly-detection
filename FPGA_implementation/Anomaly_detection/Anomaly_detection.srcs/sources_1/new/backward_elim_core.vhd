@@ -242,7 +242,7 @@ begin
 
       r_j_i := shift_left(resize(input_backward_elim.row_j(input_backward_elim.index_i), r_j_i'length), PRECISION_SHIFT);
       -- For more precise integer division(in Vivado the rounding is always downwards)
-      r_j_i := r_j_i+r_i_i_halv;
+--      r_j_i := r_j_i+r_i_i_halv;
 
       if v.msb_index <= DIV_PRECISION then
         divisor_inv_from_lut := to_integer(divisor_inv);
