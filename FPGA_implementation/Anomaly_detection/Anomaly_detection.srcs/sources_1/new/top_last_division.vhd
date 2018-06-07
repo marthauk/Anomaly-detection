@@ -41,8 +41,8 @@ begin
 
   input_to_divisor_lut : process(msb_valid, msb_index)
   begin
-    if msb_valid = '1' then
-      divisor_lut <= to_unsigned(msb_index, DIV_PRECISION);
+    if msb_valid = '1' and msb_index<=DIV_PRECISION then
+      divisor_lut <= to_unsigned(to_integer(unsigned(divisor)), DIV_PRECISION);
     else
       divisor_lut <= to_unsigned(0, DIV_PRECISION);
     end if;

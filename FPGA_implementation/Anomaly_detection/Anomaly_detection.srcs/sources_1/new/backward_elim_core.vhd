@@ -43,8 +43,8 @@ begin
 
   input_to_divisor_lut : process(msb_valid, msb_index)
   begin
-    if msb_valid = '1' then
-      divisor_lut <= to_unsigned(msb_index, DIV_PRECISION);
+    if msb_valid = '1' and msb_index<=DIV_PRECISION then
+      divisor_lut <= to_unsigned(to_integer(unsigned(divisor)), DIV_PRECISION);
     else
       divisor_lut <= to_unsigned(0, DIV_PRECISION);
     end if;
@@ -237,7 +237,6 @@ begin
       v.msb_index   := msb_index;
 
       r_i_i      := to_integer(input_backward_elim.row_i(input_backward_elim.index_i));
-      --r_i_i_halv    := to_integer(shift_right(to_signed(r_i_i, PIXEL_DATA_WIDTH*2), 1));  -- dividing
       r_i_i_halv := shift_left((shift_right(to_signed(r_i_i, r_i_i_halv'length), 1)), PRECISION_SHIFT);
 --dividing by two, then shifting up again with precision shift.
 
