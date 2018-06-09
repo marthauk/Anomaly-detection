@@ -27,7 +27,7 @@ architecture Behavioral of acad_correlation is
   constant NUMBER_OF_WRITES_PER_CYCLE : integer range 0 to 2         := 2;  --
                                                                             --see
                                                                             --above comment
-  constant NUMBER_OF_WRITES_PER_ROW   : integer range 0 to P_BANDS/2 := P_BANDS/2;
+  constant NUMBER_OF_WRITES_PER_COLUMN   : integer range 0 to P_BANDS/2 := P_BANDS/2;
 
   signal r_write_address      : integer range 0 to B_RAM_SIZE-1 := 0;
   signal write_done_on_column : integer range 0 to P_BANDS/2    := 0;
@@ -111,7 +111,7 @@ begin
           b_factor_01_i := (others => '0');
           b_factor_02_i := (others => '0');
 
-        elsif valid = '1' and write_done_on_column <= NUMBER_OF_WRITES_PER_ROW-1 and write_enable = '1' then  --and to_integer(unsigned(write_done_on_column)) > 0 then
+        elsif valid = '1' and write_done_on_column <= NUMBER_OF_WRITES_PER_COLUMN-1 and write_enable = '1' then  --and to_integer(unsigned(write_done_on_column)) > 0 then
           if flag_first_pixel = '0' then
             --input din is horizontal vector. A/B_factor 01 is the transposed
             --vertical element factor of the product din.' * din. A/B_factor_02 is
@@ -193,11 +193,13 @@ begin
         write_done_on_column <= 0;
         flag_has_read_first  <= '0';
         flag_first_pixel     <= '1';
+        valid_out <= '0'; 
       elsif valid = '0' then
         write_enable         <= '0';
         flag_has_read_first  <= '0';
         flag_has_read_second <= '0';
-      elsif valid = '1' and write_done_on_column <= NUMBER_OF_WRITES_PER_ROW-1 and flag_first_pixel = '1' then
+        valid_out <= '0'; 
+      elsif valid = '1' and write_done_on_column <= NUMBER_OF_WRITES_PER_COLUMN-1 and flag_first_pixel = '1' then
         if flag_has_read_first = '0' then
           -- Need to read first element of the pixel before starting any writes
           flag_has_read_first <= '1';
@@ -205,15 +207,17 @@ begin
           write_address       <= r_write_address;
           read_enable         <= '1';
           write_enable        <= '1';
+          valid_out <= '0'; 
         elsif flag_has_read_first = '1' and write_enable = '1' then
           r_write_address      <= r_write_address +1;
           write_address        <= r_write_address;
           read_address         <= r_write_address+1;
           write_enable         <= '1';
           write_done_on_column <= write_done_on_column + 1;
+          valid_out <= '1';
         end if;
       -- Going to buffer two read elements.
-      elsif valid = '1' and write_done_on_column <= NUMBER_OF_WRITES_PER_ROW-1 and flag_first_pixel = '0' then
+      elsif valid = '1' and write_done_on_column <= NUMBER_OF_WRITES_PER_COLUMN-1 and flag_first_pixel = '0' then
         if flag_has_read_first = '0' and flag_has_read_second = '0' then
           -- Need to read first element of the pixel before starting any writes
           flag_has_read_first <= '1';
@@ -221,31 +225,33 @@ begin
           write_address       <= r_write_address;
           read_enable         <= '1';
           write_enable        <= '0';
+          valid_out <= '0'; 
         elsif flag_has_read_first = '1' and write_enable = '0' and flag_has_read_second = '0' then
           read_address         <= r_write_address +1;
           read_enable          <= '1';
           flag_has_read_second <= '1';
           r_read_address       <= r_read_address +1;
+          valid_out <= '0'; 
         end if;
         if flag_has_read_second = '1' and write_enable = '0' then
           write_address  <= r_write_address;
           read_address   <= r_write_address+2;
           write_enable   <= '1';
           r_read_address <= r_read_address +1;
+          valid_out <= '0'; 
         elsif flag_has_read_second = '1' and write_enable = '1' then
           r_write_address      <= r_write_address +1;
           write_address        <= r_write_address;
           read_address         <= r_read_address;
           r_read_address       <= r_read_address +1;
           write_done_on_column <= write_done_on_column + 1;
+          valid_out <= '1';
         end if;
-      elsif valid = '1' and write_done_on_column > NUMBER_OF_WRITES_PER_ROW-1 then
+      elsif valid = '1' and write_done_on_column > NUMBER_OF_WRITES_PER_COLUMN-1 then
         -- New pixel coming on data_in input
         -- Assuming consequent pixels are hold valid, starting working on
         -- next pixel next cycle;
-        if(flag_first_pixel = '0') then
-          valid_out <= '1';  -- data outputted from correlation module will always "lag" one pixel
-        end if;
+        valid_out <= '1';  
         r_write_address      <= 0;
         r_read_address       <= 0;
         read_address         <= 0;
