@@ -31,7 +31,6 @@ architecture Behavioral of acad_correlation is
 
   signal r_write_address      : integer range 0 to B_RAM_SIZE-1 := 0;
   signal write_done_on_column : integer range 0 to P_BANDS/2    := 0;
--- width defined in TDP spec
   signal flag_has_read_first  : std_logic :=
     '0';  --first element in the read-write pipeline 
   signal flag_has_read_second : std_logic :=
@@ -125,9 +124,7 @@ begin
             v_input_even_i := std_logic_vector(to_signed(to_integer(signed(a_factor_01_i))*to_integer(signed(a_factor_02_i)), v_input_even_i'length));
             v_input_odd_i  := std_logic_vector(to_signed(to_integer(signed(b_factor_01_i))*to_integer(signed(b_factor_02_i)), v_input_odd_i'length));
 
-            --v_data_out_prev_even_i := r_dout_prev(P_BANDS*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE-(P_BANDS-i)*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE + PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE - (P_BANDS-i)*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE);
             v_data_out_prev_even_i := r_dout_prev(P_BANDS*PIXEL_DATA_WIDTH*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2-((P_BANDS-i)*PIXEL_DATA_WIDTH*2));
-            --v_data_out_prev_odd_i  := r_dout_prev(P_BANDS*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE-(P_BANDS-i)*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE +PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE-1 downto P_BANDS*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE - (P_BANDS-i)*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE+PIXEL_DATA_WIDTH*2);
             v_data_out_prev_odd_i  := r_dout_prev(P_BANDS*PIXEL_DATA_WIDTH*NUMBER_OF_WRITES_PER_CYCLE*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2+PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*NUMBER_OF_WRITES_PER_CYCLE*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2);
 
             data_in_even_i <= std_logic_vector(to_signed(to_integer(signed(v_input_even_i))+ to_integer(signed(v_data_out_prev_even_i)), data_in_even_i'length));
@@ -156,14 +153,10 @@ begin
       end if;
 
     end process;
-    --dout(P_BANDS*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE-(P_BANDS-i)*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE + PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE - (P_BANDS-i)*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE)                                              <= data_out_even_i;
     -- Even row of output
-    --dout(P_BANDS*PIXEL_DATA_WIDTH*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2 +PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2 -(P_BANDS-i)*PIXEL_DATA_WIDTH*2)                                                                  <= data_in_even_i;
-    --  dout(P_BANDS*PIXEL_DATA_WIDTH*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2 +PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2 -(P_BANDS-i)*PIXEL_DATA_WIDTH*2)                                                                  <= data_out_even_i;
     dout_BRAMS(P_BANDS*PIXEL_DATA_WIDTH*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2 +PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2 -(P_BANDS-i)*PIXEL_DATA_WIDTH*2)                                                                      <= data_out_even_i;
     dout(P_BANDS*PIXEL_DATA_WIDTH*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2 +PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2 -(P_BANDS-i)*PIXEL_DATA_WIDTH*2)                                                                            <= data_in_even_i;
     -- Odd row of output
-    --dout(P_BANDS*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE-(P_BANDS-i)*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE +PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE-1 downto P_BANDS*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE - (P_BANDS-i)*PIXEL_DATA_WIDTH*2*NUMBER_OF_WRITES_PER_CYCLE+PIXEL_DATA_WIDTH*2) <= data_out_odd_i;
     dout_BRAMS(P_BANDS*PIXEL_DATA_WIDTH*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2+ PIXEL_DATA_WIDTH*2-1+EVEN_ROW_TOP_INDEX_CORRELATION+1 downto P_BANDS*PIXEL_DATA_WIDTH *2 - (P_BANDS-i)*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX_CORRELATION+1) <= data_out_odd_i;
     dout(P_BANDS*PIXEL_DATA_WIDTH*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2+ PIXEL_DATA_WIDTH*2-1+EVEN_ROW_TOP_INDEX_CORRELATION+1 downto P_BANDS*PIXEL_DATA_WIDTH *2 - (P_BANDS-i)*PIXEL_DATA_WIDTH*2 +EVEN_ROW_TOP_INDEX_CORRELATION+1)       <= data_in_odd_i;
 
