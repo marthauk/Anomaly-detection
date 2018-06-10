@@ -278,7 +278,7 @@ begin
 
         else
           -- Using shifting approach to division
-          inner_product              := shift_right(input_backward_elim.row_i(i)*r_j_i, v.best_approx.number_of_shifts);
+          inner_product             := shift_right(input_backward_elim.row_i(i)*r_j_i, v.best_approx.number_of_shifts);
           shifted_down_inner_product := resize(shift_right(inner_product, PRECISION_SHIFT), shifted_down_inner_product'length);
           -- To matrix A
           v.row_j(i)                 := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
@@ -288,24 +288,6 @@ begin
           v.inv_row_j(i)             := to_signed(to_integer(input_backward_elim.inv_row_j(i))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
 
         end if;
-        --inner_product := input_backward_elim.row_i(i)*r_j_i_divided;
-        --shift down again since shifting r_j_i by PRECISION_SHIFT number of
-        --shifts
-        --shifted_down_inner_product :=resize(shift_right(inner_product,PRECISION_SHIFT+PIXEL_DATA_WIDTH*2),shifted_down_inner_product'length);
-        --temp          := (inner_product+r_i_i_halv);
-        -- The r_i_i_halv is added to get a better approximation when
-        -- dividing. This is done because of integer math.
-        --temp          := to_integer(shift_right(to_signed(temp, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts));
-        --v.row_j(i)    := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-temp, 32);
-        --v.row_j(i)    := to_signed(to_integer(signed(input_backward_elim.row_j(i)))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
-
-      --inner_product := input_backward_elim.inv_row_i(i)*r_j_i_divided;
-      --inner_product  := to_signed(to_integer(input_backward_elim.inv_row_i(i))*to_integer(r_j_i_divided), inner_product'length);
-      --shift down again since shifting r_j_i
-      --shifted_down_inner_product :=resize(shift_right(inner_product,PRECISION_SHIFT+PIXEL_DATA_WIDTH*2),shifted_down_inner_product'length);
-      --temp           := (inner_product+r_i_i_halv);
-      --temp           := to_integer(shift_right(to_signed(temp, PIXEL_DATA_WIDTH*2), v.best_approx.number_of_shifts));
-      --v.inv_row_j(i) := to_signed(to_integer(input_backward_elim.inv_row_j(i))-to_integer(shifted_down_inner_product), PIXEL_DATA_WIDTH*2);
       end loop;
       -- Control signals --
       v.write_address_odd               := input_backward_elim.write_address_odd;
