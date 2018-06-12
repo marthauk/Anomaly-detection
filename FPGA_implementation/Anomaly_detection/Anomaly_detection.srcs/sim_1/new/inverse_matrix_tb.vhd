@@ -5,8 +5,8 @@
 -- File       : inverse_matrix_tb.vhd
 -- Author     :   <Martin@MARTIN-PC>
 -- Company    : 
--- Created    : 2018-03-08
--- Last update: 2018-03-15
+-- Created    : 2018-04-20
+-- Last update: 2018-04-25
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -16,20 +16,25 @@
 -------------------------------------------------------------------------------
 -- Revisions  :
 -- Date        Version  Author  Description
--- 2018-03-08  1.0      Martin  Created
+-- 2018-04-20  1.0      Martin  Created
 -------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
-
-use IEEE.numeric_std.all;
-use IEEE.STD_LOGIC_UNSIGNED.all;
-
-use STD.textio.all;
-use ieee.std_logic_textio.all;
+use ieee.numeric_std.all;
 
 library work;
 use work.Common_types_and_functions.all;
+library UNISIM;
+use UNISIM.vcomponents.all;
+library UNIMACRO;
+use unimacro.Vcomponents.all;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_textio.all;          --For file operations
+use ieee.numeric_std.all;               --For unsigned numbers
+--use ieee.math_real.all;                 --For random number generation
+use work.math_real.all;
+use std.textio.all;
 -------------------------------------------------------------------------------
 
 entity inverse_matrix_tb is
@@ -38,147 +43,180 @@ end entity inverse_matrix_tb;
 
 -------------------------------------------------------------------------------
 
-architecture behavioral of inverse_matrix_tb is
+architecture Behavioral of inverse_matrix_tb is
 
   -- component ports
-  signal reset           : std_logic;
-  signal clk_en          : std_logic;
-  signal clk             : std_logic := '1';
-  signal start_inversion : std_logic;
-  signal M_corr          : matrix_reg_type;
-  signal M_inv           : matrix_reg_type;
-
+  signal reset_n : std_logic;
+  signal clk_en  : std_logic := '1';
+  signal valid   : std_logic;
+  signal din     : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
+  signal writes_done_on_column : std_logic_vector(log2(P_BANDS/2) downto
+                                                  0);
+  signal inverse_rows : signed(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto 0);
   -- Testbench Internal Signals
   -----------------------------------------------------------------------------
+
   file file_VECTORS : text;
   file file_RESULTS : text;
-  constant c_WIDTH : natural := 4;
+  constant c_WIDTH  : natural := 4;
 
-begin  -- architecture behavioral
+  -- clock
+  signal clk     : std_logic := '1';
+  signal din_1_s : std_logic_vector(PIXEL_DATA_WIDTH*2*P_BANDS*2 -1 downto 0);
+  signal din_2_s : std_logic_vector(PIXEL_DATA_WIDTH*2*P_BANDS*2 -1 downto 0);
+
+begin  -- architecture Behavioral
 
   -- component instantiation
   DUT : entity work.inverse_matrix
     port map (
-      reset           => reset,
-      clk_en          => clk_en,
-      clk             => clk,
-      start_inversion => start_inversion,
-      M_corr          => M_corr,
-      M_inv           => M_inv);
+      reset_n               => reset_n,
+      clk_en                => clk_en,
+      clk                   => clk,
+      valid                 => valid,
+      din                   => din,
+      writes_done_on_column => writes_done_on_column,
+      inverse_rows          => inverse_rows);
 
   -- clock generation
-  clk <= not clk after 10 ns;
+  clk <= not clk after 5 ns;
 
-  -- waveform generation
-  ---------------------------------------------------------------------------
-  -- This procedure reads the file input_vectors.txt which is located in the
-  -- simulation project area.
-  -- It will read the data in and send it to the ripple-adder component
-  -- to perform the operations.  The result is written to the
-  -- output_results.txt file, located in the same directory.
-  ---------------------------------------------------------------------------
+
   process
     type t_logic_vector_array is array(0 to P_BANDS-1) of std_logic_vector(31 downto 0);
 -- Contains one row of matrix data
-    variable v_ILINE     : line;
-    variable v_data_read : t_logic_vector_array;
-    variable v_OLINE     : line;
-    variable row_counter : integer:=0 ;
-    variable element_counter : integer:=0 ;
-    variable test : std_logic_vector(7 downto 0);
-
-    variable v_SPACE : character;
-
+    variable v_ILINE         : line;
+    variable v_data_read     : t_logic_vector_array;
+    variable v_OLINE         : line;
+    variable row_counter     : integer := 0;
+    variable element_counter : integer := 0;
+    variable test            : std_logic_vector(7 downto 0);
+    variable v_SPACE         : character;
+    variable din_1           : std_logic_vector(PIXEL_DATA_WIDTH*2*P_BANDS*2 -1 downto 0);
+    variable din_2           : std_logic_vector(PIXEL_DATA_WIDTH*2*P_BANDS*2 -1 downto 0);
+    variable line_in         : std_logic_vector(PIXEL_DATA_WIDTH*2*P_BANDS-1 downto 0);
+    variable line_counter    : integer := 0;
   begin
 
     file_open(file_VECTORS, "input_matrix.txt", read_mode);
-    file_open(file_RESULTS, "output_inv_matrix.txt", write_mode);
+    -- file_open(file_RESULTS, "output_inv_matrix.txt", write_mode);
 
     while not endfile(file_VECTORS) loop
       readline(file_VECTORS, v_ILINE);
-      --readline(file_VECTORS, v_ILINE);
-      --read(v_ILINE, v_ADD_TERM1);
-    --  HREAD(v_ILINE,test );
-      --read(v_ILINE, v_SPACE);           -- read in the space character
-      --read(v_ILINE, v_ADD_TERM2);
-      --for i in 0 to P_BANDS-1 loop
-        --hread(v_ILINE, v_data_read(1));
-      while element_counter<= P_BANDS-1 loop
+      while element_counter <= P_BANDS-1 loop
         hread(v_ILINE, v_data_read(element_counter));
         read(v_ILINE, v_SPACE);
         element_counter := element_counter+1;
-        end loop;
-
+      end loop;
       for k in 0 to P_BANDS-1 loop
-        M_corr.matrix(row_counter,k) <= std_logic_vector(v_data_read(k));
-        end loop;
-        element_counter := 0;
-        row_counter := row_counter +1 ;
-
-      --write(v_OLINE, w_SUM, right, c_WIDTH);
-      --writeline(file_RESULTS, v_OLINE);
+        if line_counter <= 1 then
+          din_1(k*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 -1+ line_counter*P_BANDS*PIXEL_DATA_WIDTH*2 downto k*PIXEL_DATA_WIDTH*2 + line_counter*PIXEL_DATA_WIDTH*P_BANDS*2) := v_data_read(k);
+        elsif line_counter <= 3 and line_counter >= 2 then
+          din_2(k*PIXEL_DATA_WIDTH*2 + PIXEL_DATA_WIDTH*2 -1+ (line_counter-2)*P_BANDS*PIXEL_DATA_WIDTH*2 downto k*PIXEL_DATA_WIDTH*2 + (line_counter-2)*PIXEL_DATA_WIDTH*P_BANDS*2) := v_data_read(k);
+        end if;
+      end loop;
+      line_counter    := line_counter+1;
+      element_counter := 0;
     end loop;
-
-    --wait for 60 ns;
+    din_1_s <= din_1;
+    din_2_s <= din_2;
     file_close(file_VECTORS);
-    --file_close(file_RESULTS);
-
     wait;
   end process;
 
-  WaveGen_Proc : process
+  process
+    variable i_count : integer;
   begin
-    -- insert signal assignments here
-
-    reset           <= '1';
-    wait for 20 ns;
-    reset           <= '0';
+    writes_done_on_column <= (others => '0');
+    reset_n               <= '1';
+    clk_en                <= '1';
+    wait for 30 ns;
+    i_count               := 0;
+    if(i_count = 0) then
+      din <= din_1_s;
+    end if;
+    valid                 <= '1';
     wait for 10 ns;
-    clk_en          <= '1';
-    start_inversion <= '1';
+    i_count := 1;
+    if(i_count = 1) then
+      din <= din_2_s;
+    end if;
+    writes_done_on_column <= std_logic_vector(to_unsigned(to_integer(unsigned(writes_done_on_column))+1, writes_done_on_column'length));
+    valid                 <= '1';
+    wait for 10ns;
+    wait;
+end process;
 
-    -- M_corr.matrix(0, 0) <= std_logic_vector(to_unsigned(1, 32));
-    -- M_corr.matrix(0, 1) <= std_logic_vector(to_unsigned(3, 32));
-    -- M_corr.matrix(0, 2) <= std_logic_vector(to_unsigned(1, 32));
 
-    -- M_corr.matrix(1, 0) <= std_logic_vector(to_unsigned(2, 32));
-    -- M_corr.matrix(1, 1) <= std_logic_vector(to_unsigned(3, 32));
-    -- M_corr.matrix(1, 2) <= std_logic_vector(to_unsigned(2, 32));
+-- waveform generation
+-- WaveGen_Proc : process
+--   variable seed1, seed2 : positive;   -- Seed values for random generator 
+--   variable rand         : real;  -- Random real-number value in range 0 to 1.0
+--   variable rand2        : real;  -- Random real-number value in range 0 to 1.0
+--   variable int_rand     : integer;  -- Random integer value in range 0..4095 
+--   variable int_rand2    : integer;
+--   --variable stim         : std_logic_vector(31 downto 0);  -- Random 16-bit stimulus
+--   --variable stim         : std_logic_vector(31 downto 0);  -- Random 16-bit stimulus
+--   variable stim         : std_logic_vector(127 downto 0);  -- Random 16-bit stimulus
+--   variable stim2        : std_logic_vector(127 downto 0);  -- Random 16-bit stimulus
 
-    -- M_corr.matrix(2, 0) <= std_logic_vector(to_unsigned(6, 32));
-    -- M_corr.matrix(2, 1) <= std_logic_vector(to_unsigned(8, 32));
-    -- M_corr.matrix(2, 2) <= std_logic_vector(to_unsigned(7, 32));
-    -- -- 
+-- begin
+--   wait for 1000 ns;
+--   wait;
+--   writes_done_on_column <= (others => '0');
+--   for i in 0 to P_BANDS/2-1 loop
+--     UNIFORM(seed1, seed2, rand);      -- generate random number 
+--     UNIFORM(seed1, seed2, rand2);
+--     int_rand  := integer(TRUNC(rand *256.0));  -- Convert to integer in range of 0 to 255
+--     int_rand2 := integer(TRUNC(rand2 *256.0));  -- Convert to integer in range of 0 to 255
+--     stim      := std_logic_vector(to_unsigned(int_rand, stim'length));  -- convert to                                                                   --std_logic_vector
+--     stim2     := std_logic_vector(to_unsigned(int_rand2, stim'length));  -- convert to                                                                   --std_logic_vector
+--     -- din(P_BANDS*PIXEL_DATA_WIDTH*2*2 - ((P_BANDS)*PIXEL_DATA_WIDTH)*2*2+ PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2*2-(P_BANDS)*PIXEL_DATA_WIDTH*2*2)                       <= stim;
+--     -- din(P_BANDS*PIXEL_DATA_WIDTH*2*2 - ((P_BANDS)*PIXEL_DATA_WIDTH)*2*2+ PIXEL_DATA_WIDTH*2*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2*2-(P_BANDS)*PIXEL_DATA_WIDTH*2*2 +PIXEL_DATA_WIDTH*2) <= stim2;
 
-    -- M.matrix_inv(0, 0) <= std_logic_vector(to_unsigned(1, 32));
-    -- M.matrix_inv(0, 1) <= std_logic_vector(to_unsigned(0, 32));
-    -- M.matrix_inv(0, 2) <= std_logic_vector(to_unsigned(0, 32));
-    -- M.matrix_inv(1, 0) <= std_logic_vector(to_unsigned(0, 32));
-    -- M.matrix_inv(1, 1) <= std_logic_vector(to_unsigned(1, 32));
-    -- M.matrix_inv(1, 2) <= std_logic_vector(to_unsigned(0, 32));
-    -- M.matrix_inv(2, 0) <= std_logic_vector(to_unsigned(0, 32));
-    -- M.matrix_inv(2, 1) <= std_logic_vector(to_unsigned(0, 32));
-    -- M.matrix_inv(2, 2) <= std_logic_vector(to_unsigned(1, 32));
-    wait for 10 ns;
-    start_inversion <= '0';
-    wait for 100000000 ns;
+--     din(P_BANDS*PIXEL_DATA_WIDTH*2-1 downto 0)                             <= stim;
+--     din(P_BANDS*PIXEL_DATA_WIDTH*2*2 -1 downto P_BANDS*PIXEL_DATA_WIDTH*2) <= stim2;
 
-  end process WaveGen_Proc;
+--     valid                 <= '1';
+--     wait for 10ns;
+--     writes_done_on_column <= std_logic_vector(to_unsigned(to_integer(unsigned(writes_done_on_column))+1, writes_done_on_column'length));
+--   end loop;
+--   reset_n <= '1';
+--   clk_en  <= '1';
+--   valid   <= '1';
+--   wait for (P_BANDS)*10ns;
+--   valid   <= '0';
+--   wait for P_BANDS*100000ns;
+--   for i in 0 to P_BANDS-1 loop
+--     UNIFORM(seed1, seed2, rand);      -- generate random number 
+--     int_rand                                                                                                                                                                                := integer(TRUNC(rand *256.0));  -- Convert to integer in range of 0 to 255
+--     stim                                                                                                                                                                                    := std_logic_vector(to_unsigned(int_rand, stim'length));  -- convert to                                                                   --std_logic_vector
+--     din(P_BANDS*PIXEL_DATA_WIDTH*2*2 - ((P_BANDS-i)*PIXEL_DATA_WIDTH)*2*2+ PIXEL_DATA_WIDTH*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2*2)                       <= stim;
+--     din(P_BANDS*PIXEL_DATA_WIDTH*2*2 - ((P_BANDS-i)*PIXEL_DATA_WIDTH)*2*2+ PIXEL_DATA_WIDTH*2*2-1 downto P_BANDS*PIXEL_DATA_WIDTH*2*2-(P_BANDS-i)*PIXEL_DATA_WIDTH*2*2 +PIXEL_DATA_WIDTH*2) <= stim;
+--     wait for 10ns;
+--   end loop;
+--   valid <= '1';
+--   wait for (P_BANDS+1)*10ns;
+--   -- Should be finished by now
+--   --clk_en  <= '0';
+--   --valid   <= '0';
+--   wait for 1000ns;
+--   -- insert signal assignments here
+
+-- end process WaveGen_Proc;
+
+
+
+end architecture Behavioral;
+
+-------------------------------------------------------------------------------
+
+
+
 
 
 
 -------------------------------------------------------------------------------
 
--------------------------------------------------------------------------------
-
-
-end architecture behavioral;
 
 -------------------------------------------------------------------------------
-
-
-
-
-
-
-

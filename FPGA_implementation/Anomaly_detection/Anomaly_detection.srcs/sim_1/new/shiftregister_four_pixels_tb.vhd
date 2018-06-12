@@ -6,7 +6,7 @@
 -- Author     :   <Martin@MARTIN-PC>
 -- Company    : 
 -- Created    : 2018-04-09
--- Last update: 2018-04-09
+-- Last update: 2018-06-02
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -46,52 +46,58 @@ end entity shiftregister_four_pixels_tb;
 architecture Behavioral of shiftregister_four_pixels_tb is
 
   -- component ports
-  signal din     : std_logic_vector (63 downto 0);
-  signal valid   : std_logic := '1';
-  signal clk_en  : std_logic := '1';
-  signal reset_n : std_logic := '1';
+  signal din           : std_logic_vector (63 downto 0);
+  signal valid         : std_logic := '1';
+  signal clk_en        : std_logic := '1';
+  signal reset_n       : std_logic := '1';
   signal shift_counter : std_logic_vector (log2(P_BANDS*PIXEL_DATA_WIDTH/64) downto 0);
-  signal dout    : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH -1 downto 0);
+  signal dout          : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH -1 downto 0);
+  signal valid_out     : std_logic;
 
   -- clock
   signal clk : std_logic := '1';
+
 
 begin  -- architecture Behavioral
 
   -- component instantiation
   DUT : entity work.shiftregister_four_pixels
     port map (
-      din     => din,
-      valid   => valid,
-      clk     => clk,
-      clk_en  => clk_en,
+      din           => din,
+      valid         => valid,
+      clk           => clk,
+      clk_en        => clk_en,
       shift_counter => shift_counter,
-      reset_n => reset_n,
-      dout    => dout);
+      reset_n       => reset_n,
+      valid_out     => valid_out,
+      dout          => dout);
 
   -- clock generation
   clk <= not clk after 5 ns;
 
   -- waveform generation
   WaveGen_Proc : process
-    variable seed1, seed2 : positive;   -- Seed values for random generator 
-    variable rand         : real;  -- Random real-number value in range 0 to 1.0
-    variable int_rand     : integer;  -- Random integer value in range 0..4095 
-    variable stim         : std_logic_vector(63 downto 0);  -- Random 64-bit stimulus
-    variable delay        : integer := P_BANDS*PIXEL_DATA_WIDTH/64;  -- NUMBER of shiftregister
-                                            -- elements/datawidth. Delay in
-                                            -- clock cycles
-  -- data_rate bus from cube DMA
+    variable seed1, seed2     : positive;  -- Seed values for random generator 
+    variable rand             : real;  -- Random real-number value in range 0 to 1.0
+    variable int_rand         : integer;  -- Random integer value in range 0..4095 
+    variable stim             : std_logic_vector(63 downto 0);  -- Random 64-bit stimulus
+    variable number_of_shifts : integer := P_BANDS*PIXEL_DATA_WIDTH/(PIXEL_DATA_WIDTH*4);  -- NUMBER of shiftregister
+                                        -- elements/datawidth. 
+    variable number_of_shifts_per_cycle : integer :=4;
   begin
     -- insert signal assignments here
-    for i in 0 to delay - 1 loop
-
+    for i in 0 to number_of_shifts-1 loop
+      for j in 0 to number_of_shifts_per_cycle-1 loop
       UNIFORM(seed1, seed2, rand);      -- generate random number 
       int_rand := integer(TRUNC(rand *256.0));  -- Convert to integer in range of 0 to 255
                                                 --, find integer part 
-      stim     := std_logic_vector(to_unsigned(int_rand, stim'length));  -- convert to                                                                   --std_logic_vector
+      stim(j*PIXEL_DATA_WIDTH+PIXEL_DATA_WIDTH-1 downto j*PIXEL_DATA_WIDTH):=std_logic_vector(to_unsigned(int_rand,PIXEL_DATA_WIDTH));
+      end loop;
+      --stim     := std_logic_vector(to_unsigned(int_rand, stim'length));  -- convert to                
+                                        --std_logic_vector
       -- Address and data input
       din      <= stim;
+      valid    <= '1';
       wait for 10 ns;
     end loop;
     valid <= '0';

@@ -53,8 +53,9 @@ architecture Behavioral of acad_correlation_tb is
   signal clk_en  : std_logic;
   signal reset_n : std_logic;
   signal dout    : std_logic_vector(P_BANDS*PIXEL_DATA_WIDTH*2*2-1 downto 0);
-  signal writes_done_on_row : std_logic_vector(log2(P_BANDS/2) downto 0);
+  signal writes_done_on_column : std_logic_vector(log2(P_BANDS/2) downto 0);
   signal write_state :std_logic;
+  signal valid_out : std_logic;
   -- clock
   signal clk : std_logic := '1';
 
@@ -69,7 +70,8 @@ begin  -- architecture Behavioral
       clk_en  => clk_en,
       reset_n => reset_n,
       dout    => dout,
-      writes_done_on_row => writes_done_on_row
+      valid_out => valid_out,
+      writes_done_on_column => writes_done_on_column
             );
 
   -- clock generation
